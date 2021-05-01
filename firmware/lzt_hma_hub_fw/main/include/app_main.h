@@ -54,4 +54,5 @@ app_status_t app_meshHubInit(void);
 app_status_t app_consolInit(void);
 app_status_t app_consolRegisterNodeCmd(void);
 app_status_t app_mqttClientInit();
+void app_userInputInit();
 #endif

@@ -2,13 +2,34 @@
 #include "driver/gpio.h"
 #include "driver/timer.h"
 
-#define DELAY                   100000  //in microseconds
+#define DELAY                   10000  //in microseconds
 #define BUTTON_GPIO             GPIO_NUM_15
-#define DEBOUNCE_DELAY          50      //in miliseconds
-#define MINIMUM_HOLD_PERIOD     500     //in miliseconds
-#define MAXIMUM_HOLD_PERIOD     1000    //in miliseconds
-#define COUNT_TO_ONBOARD        5
-uint64_t millis = 0;
+
+#define MINIMUM_BUTTON_PRESS_PERIOD     100     //in miliseconds
+#define MINIMUM_BUTTON_RELEASE_PERIOD   100     //in milliseconds
+#define MAXIMUM_RELESE_PERIOD_BETWEEN_CONSICUTIVE_PRESS 800
+
+#define NUM_OF_BUTTON_INPUTS    1
+
+static uint64_t millis = 0;
+typedef struct{
+    gpio_num_t buttonGpioNum;
+    uint8_t buttonPressedStateLogicLevel;  
+    uint64_t eventMillis;
+    uint8_t pressCount;
+    uint8_t pressDetectionState;
+}button_t;
+
+static button_t buttonElemetArray[NUM_OF_BUTTON_INPUTS];
+
+button_t buttonElement0={
+    .buttonGpioNum=BUTTON_GPIO,
+    .buttonPressedStateLogicLevel=0,
+    .eventMillis=0,
+    .pressCount=0,
+    .pressDetectionState=0
+};
+
 
 timer_group_t timer_group = TIMER_GROUP_0;
 timer_idx_t timer_idx = TIMER_0;
@@ -29,7 +50,7 @@ void onBoard(){
     printf("ON-BOARDING!!\n");
 }
 static bool IRAM_ATTR timer_isr_handler(void *args){
-    millis+=100;
+    millis+=10;
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     vTaskNotifyGiveFromISR(isrTakeInputTaskHandle, &xHigherPriorityTaskWoken);
     if(xHigherPriorityTaskWoken==pdTRUE)
@@ -37,69 +58,74 @@ static bool IRAM_ATTR timer_isr_handler(void *args){
     return xHigherPriorityTaskWoken;
 }
 void isrTakeInputTask(void* pvParameters){
-    static uint64_t inputTime = 0;
-    static int previousReading=1;
-    static int presentReading=1;
-    static uint8_t state = 0;
-    static uint8_t count = 0;
     while(1)
     {
-        ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
-        switch(state){
-            case 0:
-                presentReading = gpio_get_level(BUTTON_GPIO);
-                if(presentReading!=previousReading)
-                {
-                    inputTime = getMilis();
-                    previousReading = presentReading;
-                    state = 1;
-                }
-                else
-                    state = 0;
+        ulTaskNotifyTake(pdFALSE, portMAX_DELAY);   
+        for(int buttonIndex=0;buttonIndex<NUM_OF_BUTTON_INPUTS;buttonIndex++){
+            switch(buttonElemetArray[buttonIndex].pressDetectionState){
+                case 0:
+                    if(gpio_get_level(buttonElemetArray[buttonIndex].buttonGpioNum)==buttonElemetArray[buttonIndex].buttonPressedStateLogicLevel){
+                        buttonElemetArray[buttonIndex].eventMillis=getMilis();
+                        buttonElemetArray[buttonIndex].pressDetectionState=1;
+                    }
                 break;
-            case 1: 
-                if( ((getMilis()-inputTime)>=MINIMUM_HOLD_PERIOD) && ((getMilis()-inputTime)<=MAXIMUM_HOLD_PERIOD) ){
-                    if(presentReading!=gpio_get_level(BUTTON_GPIO))
-                    {
-                        if(presentReading==0)
-                            ++count;
-                        printf("\n\nCount: %d\n\n", count);
-                        state = 0;
+                case 1:
+                    if(gpio_get_level(buttonElemetArray[buttonIndex].buttonGpioNum)==buttonElemetArray[buttonIndex].buttonPressedStateLogicLevel){
+                        if((getMilis()-buttonElemetArray[buttonIndex].eventMillis)>MINIMUM_BUTTON_PRESS_PERIOD)
+                            buttonElemetArray[buttonIndex].pressDetectionState=2; 
                     }
-                    else
-                        state = 1;
-                }
-                else
-                {
-                    if( ((getMilis()-inputTime)>MAXIMUM_HOLD_PERIOD) && (presentReading == gpio_get_level(BUTTON_GPIO)) ){
-                        count = 0;
-                        state = 0;
+                    else{
+                        buttonElemetArray[buttonIndex].pressDetectionState=5;  
                     }
-                    else if( ((getMilis()-inputTime)<MINIMUM_HOLD_PERIOD) && (presentReading!=gpio_get_level(BUTTON_GPIO)) ){
-                        count = 0;
-                        state = 0;
-                    }
-                    else
-                        state = 1;
-                }
-
-                if(count == COUNT_TO_ONBOARD){
-                    onBoard();
-                    previousReading = 1;
-                    count = 0;
-                    state = 0;
-                }
                 break;
-            default:
-                state = 0;
+                case 2:
+                    if(gpio_get_level(buttonElemetArray[buttonIndex].buttonGpioNum)!=buttonElemetArray[buttonIndex].buttonPressedStateLogicLevel){
+                        buttonElemetArray[buttonIndex].eventMillis=getMilis();
+                        buttonElemetArray[buttonIndex].pressDetectionState=3;     
+                    }
+                break;
+                case 3:
+                    if(gpio_get_level(buttonElemetArray[buttonIndex].buttonGpioNum)!=buttonElemetArray[buttonIndex].buttonPressedStateLogicLevel){
+                        if((getMilis()-buttonElemetArray[buttonIndex].eventMillis)>MINIMUM_BUTTON_RELEASE_PERIOD){
+                            buttonElemetArray[buttonIndex].pressDetectionState=4;
+                            buttonElemetArray[buttonIndex].eventMillis=getMilis();
+                            buttonElemetArray[buttonIndex].pressCount=buttonElemetArray[buttonIndex].pressCount+1; 
+                        }
+                    }
+                    else{
+                        buttonElemetArray[buttonIndex].pressDetectionState=5; 
+                    }
+                break;
+                case 4:
+                    if((getMilis()-buttonElemetArray[buttonIndex].eventMillis)>MAXIMUM_RELESE_PERIOD_BETWEEN_CONSICUTIVE_PRESS){                        
+                            buttonElemetArray[buttonIndex].pressDetectionState=5;  
+                    }
+                    else if(gpio_get_level(buttonElemetArray[buttonIndex].buttonGpioNum)==buttonElemetArray[buttonIndex].buttonPressedStateLogicLevel){
+                        buttonElemetArray[buttonIndex].pressDetectionState=0;    
+                    }
+                break;
+                case 5:
+                    if(buttonElemetArray[buttonIndex].pressCount>0)
+                        printf("\r\nPress Count : %d\r\n",buttonElemetArray[buttonIndex].pressCount); 
+                    buttonElemetArray[buttonIndex].pressDetectionState=0; 
+                    buttonElemetArray[buttonIndex].pressCount=0; 
+                    break;
+                default:
+                    buttonElemetArray[buttonIndex].pressDetectionState=0; 
+                    buttonElemetArray[buttonIndex].pressCount=0; 
+            }
+            
         }
-    }
+    } 
 }
+
 void app_userInputInit()
 {
     gpio_pad_select_gpio(BUTTON_GPIO);
     gpio_set_pull_mode(BUTTON_GPIO,GPIO_PULLUP_ONLY);
     gpio_set_direction(BUTTON_GPIO, GPIO_MODE_INPUT);
+
+    buttonElemetArray[0]=buttonElement0;
 
     timer_init(timer_group, timer_idx, &timer_config);
     timer_set_counter_value(timer_group, timer_idx, 0);

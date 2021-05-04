@@ -41,18 +41,25 @@ static const char *TAG = "app_main";
 
 void app_main(void)
 {
-    // ESP_ERROR_CHECK(nvs_flash_init());
-    // /* tcpip initialization */
-    // ESP_ERROR_CHECK(esp_netif_init());
-    // /* event initialization */
-    // ESP_ERROR_CHECK(esp_event_loop_create_default());
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+      ESP_ERROR_CHECK(nvs_flash_erase());
+      ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
+    /* tcpip initialization */
+    ESP_ERROR_CHECK(esp_netif_init());
+    /* event initialization */
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    // app_nodeCommandQueue = xQueueCreate(APP_CONFIG_NODE_CMD_QUEUE_SIZE, sizeof(app_nodeData_t));
-    // app_nodeResponseQueue = xQueueCreate(APP_CONFIG_NODE_RESPONSE_QUEUE_SIZE, sizeof(app_nodeData_t));
-    // app_meshHubInit();
-    // app_consolRegisterNodeCmd();
-    // app_consolInit();    
-    // app_mqttClientInit();
-    app_userInputInit();
+    app_loadConfig();
+    if(appConfig.startMesh == false){
+        ESP_LOGI(TAG, "ESP_WIFI_MODE_AP");
+        app_wifiApInit();
+    }
+    else{
+        app_meshInit();
+        app_userInputInit();
+    }
     ESP_LOGI(TAG,"Initialization Done\r\n");
 }

@@ -120,7 +120,7 @@ void meshScanDoneHandler(int num)
                      record.ssid, MAC2STR(record.bssid), record.primary,
                      record.rssi);
 
-            if (!strcmp(APP_CONFIG_MESH_ROUTER_SSID, (char *)record.ssid))
+            if (!strcmp(appConfig.wifiSsid, (char *)record.ssid))
             {
                 parent_found = true;
                 memcpy(&parent_record, &record, sizeof(record));
@@ -145,8 +145,8 @@ void meshScanDoneHandler(int num)
         {
             if (parent_record.authmode != WIFI_AUTH_OPEN)
             {
-                memcpy(&parent.sta.password, APP_CONFIG_MESH_ROUTER_PASSWD,
-                       strlen(APP_CONFIG_MESH_ROUTER_PASSWD));
+                memcpy(&parent.sta.password, appConfig.wifiPassword,
+                       strlen(appConfig.wifiPassword));
             }
             ESP_LOGW(TAG, "<PARENT>%s, " MACSTR ", channel:%u, rssi:%d",
                      parent_record.ssid, MAC2STR(parent_record.bssid),
@@ -367,11 +367,12 @@ app_status_t app_meshHubInit()
     /* mesh ID */
     memcpy((uint8_t *)&cfg.mesh_id, APP_CONFIG_MESH_ID, 6);
     /* router */
+    app_loadConfig();
     cfg.channel = CONFIG_MESH_CHANNEL;
-    cfg.router.ssid_len = strlen(APP_CONFIG_MESH_ROUTER_SSID);
-    memcpy((uint8_t *)&cfg.router.ssid, APP_CONFIG_MESH_ROUTER_SSID, cfg.router.ssid_len);
-    memcpy((uint8_t *)&cfg.router.password, APP_CONFIG_MESH_ROUTER_PASSWD,
-           strlen(APP_CONFIG_MESH_ROUTER_PASSWD));
+    cfg.router.ssid_len = strlen(appConfig.wifiSsid);
+    memcpy((uint8_t *)&cfg.router.ssid, appConfig.wifiSsid, cfg.router.ssid_len);
+    memcpy((uint8_t *)&cfg.router.password, appConfig.wifiPassword,
+           strlen(appConfig.wifiPassword));
     /* mesh softAP */
     ESP_ERROR_CHECK(esp_mesh_set_ap_authmode(CONFIG_MESH_AP_AUTHMODE));
     cfg.mesh_ap.max_connection = CONFIG_MESH_AP_CONNECTIONS;
@@ -383,4 +384,22 @@ app_status_t app_meshHubInit()
     ESP_LOGI(TAG, "mesh starts successfully, heap:%d\n", esp_get_free_heap_size());
 
     return APP_STATUS_OK;
+}
+void app_meshInit(){
+    app_nodeCommandQueue = xQueueCreate(APP_CONFIG_NODE_CMD_QUEUE_SIZE, sizeof(app_nodeData_t));
+    app_nodeResponseQueue = xQueueCreate(APP_CONFIG_NODE_RESPONSE_QUEUE_SIZE, sizeof(app_nodeData_t));
+    app_meshHubInit();
+    app_consolRegisterNodeCmd();
+    app_consolInit();    
+    app_mqttClientInit();
+    ESP_LOGI(TAG,"Initialization Done\r\n");
+    app_nodeData_t nodeResponse;
+    uint8_t state=0;
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
+    while(1){
+        sprintf(nodeResponse.data,"{\"d1\" : \"%d\"}",state);
+        xQueueSend(app_nodeResponseQueue, &nodeResponse, 0);   
+        state=!state;
+        vTaskDelay(10000 / portTICK_PERIOD_MS); 
+    }
 }

@@ -7,6 +7,12 @@
 #include "driver/uart.h"
 #include "linenoise/linenoise.h"
 #include "argtable3/argtable3.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_system.h"
+
+#include "lwip/err.h"
+#include "lwip/sys.h"
 
 
 #define APP_CONFIG_NODE_ID_LEN 20 //size of node ID in Bytes
@@ -21,8 +27,8 @@
 #define APP_CONFIG_NODE_DATA_MAX_LEN 200 //maximum size of node data in bytes
 
 #define APP_CONFIG_MESH_AP_PASSWD "Arghya@123"
-#define APP_CONFIG_MESH_ROUTER_SSID "Typical"
-#define APP_CONFIG_MESH_ROUTER_PASSWD "Arghya@19"
+// #define APP_CONFIG_MESH_ROUTER_SSID "Soumyanetra"
+// #define APP_CONFIG_MESH_ROUTER_PASSWD "Twamoshi"
 
 static const uint8_t APP_CONFIG_MESH_ID[6] = {0x77, 0x77, 0x77, 0x77, 0x77, 0x77};
 //===============================================================================================
@@ -42,6 +48,13 @@ typedef struct{
     char data[APP_CONFIG_NODE_DATA_MAX_LEN+1];
 }app_nodeData_t;
 
+struct appConf
+{
+    char wifiSsid[32];     //should not be changed
+    char wifiPassword[64]; //should not be changed
+    bool startMesh;
+} appConfig;
+
 /*
 *@brief Queus the commands, of type app_nodeData_t,
 *       targeted to a Node. The maximum no of commands
@@ -49,10 +62,15 @@ typedef struct{
 */
 QueueHandle_t app_nodeCommandQueue; 
 QueueHandle_t app_nodeResponseQueue;
+QueueHandle_t app_buttonDetailsQueue;
 
 app_status_t app_meshHubInit(void);
 app_status_t app_consolInit(void);
 app_status_t app_consolRegisterNodeCmd(void);
 app_status_t app_mqttClientInit();
+app_status_t app_wifiApInit(void);
+app_status_t app_saveConfig(void);
+app_status_t app_loadConfig(void);
 void app_userInputInit();
+void app_meshInit(void);
 #endif

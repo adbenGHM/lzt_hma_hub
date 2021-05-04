@@ -1,6 +1,7 @@
 #include "app_main.h"
 #include "driver/gpio.h"
 #include "driver/timer.h"
+#include "esp_wifi.h"
 
 #define DELAY                   10000  //in microseconds
 #define BUTTON_GPIO             GPIO_NUM_15
@@ -19,6 +20,11 @@ typedef struct{
     uint8_t pressCount;
     uint8_t pressDetectionState;
 }button_t;
+
+typedef struct{
+    gpio_num_t buttonGpioNum;
+    uint8_t pressCount;
+} button_details_t;
 
 static button_t buttonElemetArray[NUM_OF_BUTTON_INPUTS];
 
@@ -49,6 +55,34 @@ uint64_t getMilis(void){
 void onBoard(){
     printf("ON-BOARDING!!\n");
 }
+void takeActionOnInputTask(void* pvParameters){
+    button_details_t button_details_receive;
+    while(1){
+        if(xQueueReceive(app_buttonDetailsQueue, &button_details_receive, 0)==pdTRUE)
+        {
+            switch(button_details_receive.pressCount){
+                case 1:
+                    printf("1 is pressed\r\n");
+                    break;
+                case 2:
+                    printf("2 is pressed\r\n");
+                    break;
+                case 3:
+                    printf("3 is pressed\r\n");
+                    break;
+                case 4:
+                    printf("4 is pressed\r\n");
+                    break;
+                case 5:
+                    appConfig.startMesh = false;
+                    app_saveConfig();
+                    esp_restart();
+                    break;    
+            }
+        }
+    }
+    vTaskDelete(NULL);
+}
 static bool IRAM_ATTR timer_isr_handler(void *args){
     millis+=10;
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -58,6 +92,7 @@ static bool IRAM_ATTR timer_isr_handler(void *args){
     return xHigherPriorityTaskWoken;
 }
 void isrTakeInputTask(void* pvParameters){
+    button_details_t button_details;
     while(1)
     {
         ulTaskNotifyTake(pdFALSE, portMAX_DELAY);   
@@ -89,7 +124,7 @@ void isrTakeInputTask(void* pvParameters){
                         if((getMilis()-buttonElemetArray[buttonIndex].eventMillis)>MINIMUM_BUTTON_RELEASE_PERIOD){
                             buttonElemetArray[buttonIndex].pressDetectionState=4;
                             buttonElemetArray[buttonIndex].eventMillis=getMilis();
-                            buttonElemetArray[buttonIndex].pressCount=buttonElemetArray[buttonIndex].pressCount+1; 
+                            buttonElemetArray[buttonIndex].pressCount=buttonElemetArray[buttonIndex].pressCount+1;
                         }
                     }
                     else{
@@ -105,8 +140,12 @@ void isrTakeInputTask(void* pvParameters){
                     }
                 break;
                 case 5:
-                    if(buttonElemetArray[buttonIndex].pressCount>0)
-                        printf("\r\nPress Count : %d\r\n",buttonElemetArray[buttonIndex].pressCount); 
+                    if(buttonElemetArray[buttonIndex].pressCount>0){
+                        button_details.buttonGpioNum = buttonElemetArray[buttonIndex].buttonGpioNum;
+                        button_details.pressCount = buttonElemetArray[buttonIndex].pressCount;
+                        xQueueSend(app_buttonDetailsQueue, &button_details, 10);
+                        //     printf("\r\nPress Count : %d\r\n",buttonElemetArray[buttonIndex].pressCount); 
+                    }
                     buttonElemetArray[buttonIndex].pressDetectionState=0; 
                     buttonElemetArray[buttonIndex].pressCount=0; 
                     break;
@@ -134,4 +173,6 @@ void app_userInputInit()
     timer_start(timer_group,timer_idx);
 
     xTaskCreate(&isrTakeInputTask, "TakeInputTask", 3000, NULL, configMAX_PRIORITIES - 1, &isrTakeInputTaskHandle);
+    xTaskCreate(&takeActionOnInputTask, "TakeActionOnInputTask", 3000, NULL, configMAX_PRIORITIES - 2, &isrTakeInputTaskHandle);
+    app_buttonDetailsQueue = xQueueCreate(5, sizeof(button_details_t));
 }

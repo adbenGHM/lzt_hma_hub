@@ -1,5 +1,4 @@
 #include "app_main.h"
-#include "driver/gpio.h"
 #include "driver/timer.h"
 #include "esp_wifi.h"
 
@@ -21,10 +20,6 @@ typedef struct{
     uint8_t pressDetectionState;
 }button_t;
 
-typedef struct{
-    gpio_num_t buttonGpioNum;
-    uint8_t pressCount;
-} button_details_t;
 
 static button_t buttonElemetArray[NUM_OF_BUTTON_INPUTS];
 
@@ -35,7 +30,6 @@ button_t buttonElement0={
     .pressCount=0,
     .pressDetectionState=0
 };
-
 
 timer_group_t timer_group = TIMER_GROUP_0;
 timer_idx_t timer_idx = TIMER_0;
@@ -55,34 +49,7 @@ uint64_t getMilis(void){
 void onBoard(){
     printf("ON-BOARDING!!\n");
 }
-void takeActionOnInputTask(void* pvParameters){
-    button_details_t button_details_receive;
-    while(1){
-        if(xQueueReceive(app_buttonDetailsQueue, &button_details_receive, 0)==pdTRUE)
-        {
-            switch(button_details_receive.pressCount){
-                case 1:
-                    printf("1 is pressed\r\n");
-                    break;
-                case 2:
-                    printf("2 is pressed\r\n");
-                    break;
-                case 3:
-                    printf("3 is pressed\r\n");
-                    break;
-                case 4:
-                    printf("4 is pressed\r\n");
-                    break;
-                case 5:
-                    appConfig.startMesh = false;
-                    app_saveConfig();
-                    esp_restart();
-                    break;    
-            }
-        }
-    }
-    vTaskDelete(NULL);
-}
+
 static bool IRAM_ATTR timer_isr_handler(void *args){
     millis+=10;
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -173,6 +140,6 @@ void app_userInputInit()
     timer_start(timer_group,timer_idx);
 
     xTaskCreate(&isrTakeInputTask, "TakeInputTask", 3000, NULL, configMAX_PRIORITIES - 1, &isrTakeInputTaskHandle);
-    xTaskCreate(&takeActionOnInputTask, "TakeActionOnInputTask", 3000, NULL, configMAX_PRIORITIES - 2, &isrTakeInputTaskHandle);
+    xTaskCreate(&app_process_input_Task, "ProcessInputTask", 4000, NULL, configMAX_PRIORITIES - 1, NULL);
     app_buttonDetailsQueue = xQueueCreate(5, sizeof(button_details_t));
 }

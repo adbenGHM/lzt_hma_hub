@@ -86,6 +86,7 @@ static esp_err_t httpServer_credentialPostHandler(httpd_req_t *req)
         printf("\r\nDevice Address Json : %s\r\n",nodeAddressJson);
         httpd_resp_set_type(req, "application/json");
         httpd_resp_send(req, nodeAddressJson, HTTPD_RESP_USE_STRLEN);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
         esp_restart(); //Restrating CPU on Successful Credential Receive
     }
     else{

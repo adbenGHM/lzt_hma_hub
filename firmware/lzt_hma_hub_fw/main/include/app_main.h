@@ -10,6 +10,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
+#include "driver/gpio.h"
 
 #include "lwip/err.h"
 #include "lwip/sys.h"
@@ -55,6 +56,11 @@ struct appConf
     bool startMesh;
 } appConfig;
 
+typedef struct{
+    gpio_num_t buttonGpioNum;
+    uint8_t pressCount;
+} button_details_t;
+
 /*
 *@brief Queus the commands, of type app_nodeData_t,
 *       targeted to a Node. The maximum no of commands
@@ -73,4 +79,5 @@ app_status_t app_saveConfig(void);
 app_status_t app_loadConfig(void);
 void app_userInputInit();
 void app_meshInit(void);
+void app_process_input_Task(void*);
 #endif

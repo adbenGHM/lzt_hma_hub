@@ -7,7 +7,7 @@
 
 #define MINIMUM_BUTTON_PRESS_PERIOD     100     //in miliseconds
 #define MINIMUM_BUTTON_RELEASE_PERIOD   100     //in milliseconds
-#define MAXIMUM_RELESE_PERIOD_BETWEEN_CONSICUTIVE_PRESS 800
+#define MAXIMUM_RELESE_PERIOD_BETWEEN_CONSICUTIVE_PRESS 1000
 
 #define NUM_OF_BUTTON_INPUTS    1
 
@@ -131,15 +131,15 @@ void app_userInputInit()
     gpio_set_pull_mode(BUTTON_GPIO,GPIO_PULLUP_ONLY);
     gpio_set_direction(BUTTON_GPIO, GPIO_MODE_INPUT);
 
-    buttonElemetArray[0]=buttonElement0;
+    buttonElemetArray[0]=buttonElement0;    
 
+    xTaskCreate(&isrTakeInputTask, "TakeInputTask", 3000, NULL, configMAX_PRIORITIES - 1, &isrTakeInputTaskHandle);
+    xTaskCreate(&app_process_input_Task, "ProcessInputTask", 4000, NULL, configMAX_PRIORITIES - 1, NULL);
+    app_buttonDetailsQueue = xQueueCreate(5, sizeof(button_details_t));
+    
     timer_init(timer_group, timer_idx, &timer_config);
     timer_set_counter_value(timer_group, timer_idx, 0);
     timer_set_alarm_value(timer_group, timer_idx, DELAY);
     timer_isr_callback_add(timer_group, timer_idx, (timer_isr_t)timer_isr_handler, (void *)NULL,ESP_INTR_FLAG_IRAM);
     timer_start(timer_group,timer_idx);
-
-    xTaskCreate(&isrTakeInputTask, "TakeInputTask", 3000, NULL, configMAX_PRIORITIES - 1, &isrTakeInputTaskHandle);
-    xTaskCreate(&app_process_input_Task, "ProcessInputTask", 4000, NULL, configMAX_PRIORITIES - 1, NULL);
-    app_buttonDetailsQueue = xQueueCreate(5, sizeof(button_details_t));
 }

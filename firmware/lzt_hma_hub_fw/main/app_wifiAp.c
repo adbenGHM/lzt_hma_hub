@@ -12,6 +12,7 @@
 #define APP_CONFIG_AP_WIFI_PASS         "esp@connect"
 #define APP_CONFIG_AP_WIFI_CHANNEL      1
 #define APP_CONFIG_AP_WIFI_MAX_STA_CONN 5
+#define ESP_MESH_HUB_ID "24:1a:c4:af:4c:fc"
 
 #define MIN(a, b) a > b ? b : a
 
@@ -36,7 +37,7 @@ static const char *TAG = "wifi softAP";
 
 static esp_err_t httpServer_infoGettUriHandler(httpd_req_t *req){
     ESP_LOGI(TAG, "GET DEVICE JSON REQUEST");
-    char nodeAddressJson[]="{\"id\": \"ESP_MESH_HUB\", \"device_type\": \"KICU_EKTA\"}";
+    char nodeAddressJson[]="{\"id\": \""ESP_MESH_HUB_ID"\", \"device_type\": \"Single Channel Switch\"}";
     printf("\r\nDevice Address Json : %s\r\n",nodeAddressJson);
     httpd_resp_set_type(req, "application/json");
     httpd_resp_send(req, nodeAddressJson, HTTPD_RESP_USE_STRLEN);
@@ -70,8 +71,8 @@ static esp_err_t httpServer_credentialPostHandler(httpd_req_t *req)
     printf("\r\nHttp Client Post received : %s\r\n",buf);
     memset(appConfig.wifiSsid,'\0',sizeof(appConfig.wifiSsid));
     memset(appConfig.wifiPassword,'\0',sizeof(appConfig.wifiPassword));
-    char* ssid = strstr(buf,"SSID");
-    char* password =  strstr(buf,"Password");
+    char* ssid = strstr(buf,"ssid");
+    char* password =  strstr(buf,"password");
     char* seperator = strstr(buf,",");
     if(ssid != NULL && password != NULL && seperator != NULL){
         int ssidLength=strlen(ssid+6)-strlen(seperator);

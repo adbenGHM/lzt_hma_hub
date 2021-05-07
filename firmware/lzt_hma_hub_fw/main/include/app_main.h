@@ -78,6 +78,8 @@ app_status_t app_wifiApInit(void);
 app_status_t app_saveConfig(void);
 app_status_t app_loadConfig(void);
 void app_userInputInit();
-void app_meshInit(void);
+//void app_meshInit(void);
+app_status_t app_wifiStaInit(void);
 void app_process_input_Task(void*);
+void app_process_input_takeAction(void);
 #endif

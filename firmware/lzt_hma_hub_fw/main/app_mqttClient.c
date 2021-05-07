@@ -2,6 +2,9 @@
 #include "mqtt_client.h"
 static const char *TAG = "MQTT_CLIENT";
 //{"NodeId" : "24:0a:c4:af:4c:fc", "data" : {"sw1": "1", "sw2" :"1"}}
+static char macID[18];
+static char publishTopic[25];
+static char subscribeTopic[25];
 static char *strnchr(char *s, unsigned char c, size_t len)
 {
     while (len && *s != c)
@@ -19,13 +22,13 @@ void processMqttData(char *dataStr, uint16_t dataLen)
     memset(nodeCmd.data, '\0', sizeof(nodeCmd.data));
     char *p_pos;
     uint16_t remainingLength = dataLen;
-    p_pos = strnstr(dataStr, "NodeId", remainingLength);
+    p_pos = strnstr(dataStr, "MAC-Id", remainingLength);
     if (p_pos == NULL)
     {
         ESP_LOGE(TAG, "Error processing command \"%.*s\"\r\n", dataLen, dataStr);
         return;
     }
-    p_pos = p_pos + strlen("NodeId");
+    p_pos = p_pos + strlen("MAC-Id");
     remainingLength = dataLen - (p_pos - dataStr);
     p_pos = strnchr(p_pos, ':', remainingLength);
     if (p_pos == NULL)
@@ -52,7 +55,7 @@ void processMqttData(char *dataStr, uint16_t dataLen)
     }
     if ((p_pos - p_tempPos) > APP_CONFIG_NODE_ID_LEN)
     {
-        ESP_LOGE(TAG, "NodeId too long \"%.*s\"\r\n", dataLen, dataStr);
+        ESP_LOGE(TAG, "MAC-Id too long \"%.*s\"\r\n", dataLen, dataStr);
         return;
     }
     strncpy(nodeCmd.nodeId, p_tempPos, p_pos - p_tempPos);
@@ -80,8 +83,9 @@ void processMqttData(char *dataStr, uint16_t dataLen)
         return;
     }
     strncpy(nodeCmd.data, p_tempPos, p_pos - p_tempPos);
-    ESP_LOGI(TAG, "Node ID : %s , Data : %s\r\n", nodeCmd.nodeId, nodeCmd.data);
+    ESP_LOGI(TAG, "MAC ID : %s , Data : %s\r\n", nodeCmd.nodeId, nodeCmd.data);
     xQueueSend(app_nodeCommandQueue, &nodeCmd, 0);
+    app_process_input_takeAction();
 }
 static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 {
@@ -92,9 +96,7 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
     {
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-        msg_id = esp_mqtt_client_subscribe(client, "24:1a:c4:af:4c:fc/control", 0);
-        ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
-        msg_id = esp_mqtt_client_subscribe(client, "24:1a:c4:af:4c:fd/control", 0);
+        msg_id = esp_mqtt_client_subscribe(client, subscribeTopic, 0);
         ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
         break;
     case MQTT_EVENT_DISCONNECTED:
@@ -138,12 +140,11 @@ static void mqttPublish(void *arg)
         qStatus = xQueueReceive(app_nodeResponseQueue, &nodeResponse, portMAX_DELAY);
         if (qStatus == pdPASS)
         {
-            //sprintf((char*)mqttStr,"{\"NodeId\" : \"%s\", \"data\" : %s}",nodeResponse.nodeId,nodeResponse.data);
-            sprintf((char*)mqttStr,"{\"NodeId\" : \"%s\", \"Data\" : %s}","24:1a:c4:af:4c:fc",nodeResponse.data);
+            sprintf((char*)mqttStr,"{\"MAC-Id\" : \"%s\", \"Data\" : %s}",macID,nodeResponse.data);
             printf("\r\n");
             printf((char*)mqttStr);
             printf("\r\n");
-            esp_mqtt_client_publish(client, "24:1a:c4:af:4c:fc/monitor", (char*)mqttStr, 0, 1, 0);
+            esp_mqtt_client_publish(client, publishTopic, (char*)mqttStr, 0, 1, 0);
         }
     }
     vTaskDelete(NULL);
@@ -156,11 +157,22 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 
 app_status_t app_mqttClientInit()
 {
+    uint8_t derived_mac_addr[6] = {0};
     esp_mqtt_client_config_t mqtt_cfg = {
         .uri = "mqtt://3.128.241.99",
         .port = 1883,
     };
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+    ESP_ERROR_CHECK(esp_read_mac(derived_mac_addr, ESP_MAC_WIFI_STA));
+    sprintf(macID, "%x:%x:%x:%x:%x:%x", derived_mac_addr[0], derived_mac_addr[1], derived_mac_addr[2],
+                                        derived_mac_addr[3], derived_mac_addr[4], derived_mac_addr[5]);
+    memcpy(publishTopic,macID,sizeof(macID));
+    memcpy(subscribeTopic,macID,sizeof(macID));
+    ESP_LOGI(TAG, "sent subscribe successful, MAC STA ID: %s", macID);
+    strcat(publishTopic,"/monitor");
+    // printf("PUBLISH to TOPIC: %s\r\n", publishTopic);
+    strcat(subscribeTopic,"/control");
+    // printf("PUBLISH to TOPIC: %s\r\n", subscribeTopic);
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
     esp_mqtt_client_start(client);
     xTaskCreate(mqttPublish, "MQTTPUB", 3072, client, 4, NULL);

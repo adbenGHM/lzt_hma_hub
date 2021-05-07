@@ -138,7 +138,7 @@ void app_userInputInit()
     gpio_config_t io_conf = {
         .intr_type = GPIO_PIN_INTR_DISABLE,
         //set as output mode
-        .mode = GPIO_MODE_OUTPUT,
+        .mode = GPIO_MODE_INPUT_OUTPUT,
         //bit mask of the pins that you want to set,e.g.GPIO18/19
         .pin_bit_mask = ((1ULL << GPIO_NUM_6) | (1ULL << GPIO_NUM_7) |  (1ULL << GPIO_NUM_4) |  (1ULL << GPIO_NUM_5) |  (1ULL << GPIO_NUM_12) |  (1ULL << GPIO_NUM_13)),
         //disable pull-down mode
@@ -149,11 +149,11 @@ void app_userInputInit()
     gpio_config(&io_conf);
     //button 2
     gpio_set_level(GPIO_NUM_6,1); //red
-    gpio_set_level(GPIO_NUM_7,1); //green
+    gpio_set_level(GPIO_NUM_7,0); //green
 
     //button 1
     gpio_set_level(GPIO_NUM_4,1); //red
-    gpio_set_level(GPIO_NUM_5,1); //green
+    gpio_set_level(GPIO_NUM_5,0); //green
 
     gpio_set_level(GPIO_NUM_12,0);
     gpio_set_level(GPIO_NUM_13,0);

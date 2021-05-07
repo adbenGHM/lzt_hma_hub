@@ -42,6 +42,7 @@ static const char *TAG = "app_main";
 void app_main(void)
 {
     esp_err_t ret = nvs_flash_init();
+    app_status_t resp;
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
       ESP_ERROR_CHECK(nvs_flash_erase());
       ret = nvs_flash_init();
@@ -58,7 +59,18 @@ void app_main(void)
         app_wifiApInit();
     }
     else{
-        app_meshInit();
+        // app_meshInit();
+        ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
+        resp=app_wifiStaInit();
+        if(resp != APP_STATUS_OK)
+        {
+            while(1){
+                printf("Error\r\n");
+            }
+        }
+        app_nodeCommandQueue = xQueueCreate(APP_CONFIG_NODE_CMD_QUEUE_SIZE, sizeof(app_nodeData_t));
+        app_nodeResponseQueue = xQueueCreate(APP_CONFIG_NODE_RESPONSE_QUEUE_SIZE, sizeof(app_nodeData_t));
+        app_mqttClientInit();
         app_userInputInit();
     }
     ESP_LOGI(TAG,"Initialization Done\r\n");

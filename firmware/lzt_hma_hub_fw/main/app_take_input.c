@@ -3,13 +3,14 @@
 #include "esp_wifi.h"
 
 #define DELAY                   10000  //in microseconds
-#define BUTTON_GPIO             GPIO_NUM_15
+#define BUTTON_GPIO1             GPIO_NUM_1
+#define BUTTON_GPIO2             GPIO_NUM_2
 
 #define MINIMUM_BUTTON_PRESS_PERIOD     100     //in miliseconds
 #define MINIMUM_BUTTON_RELEASE_PERIOD   100     //in milliseconds
-#define MAXIMUM_RELESE_PERIOD_BETWEEN_CONSICUTIVE_PRESS 1000
+#define MAXIMUM_RELESE_PERIOD_BETWEEN_CONSICUTIVE_PRESS 500
 
-#define NUM_OF_BUTTON_INPUTS    1
+#define NUM_OF_BUTTON_INPUTS    2
 
 static uint64_t millis = 0;
 typedef struct{
@@ -24,7 +25,14 @@ typedef struct{
 static button_t buttonElemetArray[NUM_OF_BUTTON_INPUTS];
 
 button_t buttonElement0={
-    .buttonGpioNum=BUTTON_GPIO,
+    .buttonGpioNum=BUTTON_GPIO1,
+    .buttonPressedStateLogicLevel=0,
+    .eventMillis=0,
+    .pressCount=0,
+    .pressDetectionState=0
+};
+button_t buttonElement1={
+    .buttonGpioNum=BUTTON_GPIO2,
     .buttonPressedStateLogicLevel=0,
     .eventMillis=0,
     .pressCount=0,
@@ -127,15 +135,44 @@ void isrTakeInputTask(void* pvParameters){
 
 void app_userInputInit()
 {
-    gpio_pad_select_gpio(BUTTON_GPIO);
-    gpio_set_pull_mode(BUTTON_GPIO,GPIO_PULLUP_ONLY);
-    gpio_set_direction(BUTTON_GPIO, GPIO_MODE_INPUT);
+    gpio_config_t io_conf = {
+        .intr_type = GPIO_PIN_INTR_DISABLE,
+        //set as output mode
+        .mode = GPIO_MODE_OUTPUT,
+        //bit mask of the pins that you want to set,e.g.GPIO18/19
+        .pin_bit_mask = ((1ULL << GPIO_NUM_6) | (1ULL << GPIO_NUM_7) |  (1ULL << GPIO_NUM_4) |  (1ULL << GPIO_NUM_5) |  (1ULL << GPIO_NUM_12) |  (1ULL << GPIO_NUM_13)),
+        //disable pull-down mode
+        .pull_down_en = 0,
+        //disable pull-up mode
+        .pull_up_en = 0,
+    };
+    gpio_config(&io_conf);
+    //button 2
+    gpio_set_level(GPIO_NUM_6,1); //red
+    gpio_set_level(GPIO_NUM_7,1); //green
 
-    buttonElemetArray[0]=buttonElement0;    
+    //button 1
+    gpio_set_level(GPIO_NUM_4,1); //red
+    gpio_set_level(GPIO_NUM_5,1); //green
+
+    gpio_set_level(GPIO_NUM_12,0);
+    gpio_set_level(GPIO_NUM_13,0);
+    
+    gpio_pad_select_gpio(BUTTON_GPIO1);
+    gpio_set_pull_mode(BUTTON_GPIO1,GPIO_PULLUP_ONLY);
+    gpio_set_direction(BUTTON_GPIO1, GPIO_MODE_INPUT);
+
+    gpio_pad_select_gpio(BUTTON_GPIO2);
+    gpio_set_pull_mode(BUTTON_GPIO2,GPIO_PULLUP_ONLY);
+    gpio_set_direction(BUTTON_GPIO2, GPIO_MODE_INPUT);
+
+    buttonElemetArray[0]=buttonElement0;  
+    buttonElemetArray[1]=buttonElement1;   
 
     xTaskCreate(&isrTakeInputTask, "TakeInputTask", 3000, NULL, configMAX_PRIORITIES - 1, &isrTakeInputTaskHandle);
-    xTaskCreate(&app_process_input_Task, "ProcessInputTask", 4000, NULL, configMAX_PRIORITIES - 1, NULL);
     app_buttonDetailsQueue = xQueueCreate(5, sizeof(button_details_t));
+    xTaskCreate(&app_process_input_Task, "ProcessInputTask", 4000, NULL, configMAX_PRIORITIES - 1, NULL);
+    
     
     timer_init(timer_group, timer_idx, &timer_config);
     timer_set_counter_value(timer_group, timer_idx, 0);

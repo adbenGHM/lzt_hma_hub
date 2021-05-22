@@ -22,13 +22,13 @@ void processMqttData(char *dataStr, uint16_t dataLen)
     memset(nodeCmd.data, '\0', sizeof(nodeCmd.data));
     char *p_pos;
     uint16_t remainingLength = dataLen;
-    p_pos = strnstr(dataStr, "MAC-Id", remainingLength);
+    p_pos = strnstr(dataStr, "NodeId", remainingLength);
     if (p_pos == NULL)
     {
         ESP_LOGE(TAG, "Error processing command \"%.*s\"\r\n", dataLen, dataStr);
         return;
     }
-    p_pos = p_pos + strlen("MAC-Id");
+    p_pos = p_pos + strlen("NodeId");
     remainingLength = dataLen - (p_pos - dataStr);
     p_pos = strnchr(p_pos, ':', remainingLength);
     if (p_pos == NULL)
@@ -55,7 +55,7 @@ void processMqttData(char *dataStr, uint16_t dataLen)
     }
     if ((p_pos - p_tempPos) > APP_CONFIG_NODE_ID_LEN)
     {
-        ESP_LOGE(TAG, "MAC-Id too long \"%.*s\"\r\n", dataLen, dataStr);
+        ESP_LOGE(TAG, "NodeId too long \"%.*s\"\r\n", dataLen, dataStr);
         return;
     }
     strncpy(nodeCmd.nodeId, p_tempPos, p_pos - p_tempPos);
@@ -83,9 +83,9 @@ void processMqttData(char *dataStr, uint16_t dataLen)
         return;
     }
     strncpy(nodeCmd.data, p_tempPos, p_pos - p_tempPos);
-    ESP_LOGI(TAG, "MAC ID : %s , Data : %s\r\n", nodeCmd.nodeId, nodeCmd.data);
+    ESP_LOGI(TAG, "NodeId : %s , Data : %s\r\n", nodeCmd.nodeId, nodeCmd.data);
     xQueueSend(app_nodeCommandQueue, &nodeCmd, 0);
-    app_process_input_takeAction();
+    //app_process_cmd_input_Task();
 }
 static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 {
@@ -97,6 +97,7 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
         msg_id = esp_mqtt_client_subscribe(client, subscribeTopic, 0);
+        printf("\r\nNode Subscribed to topic [%s]\r\n",subscribeTopic);
         ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
         break;
     case MQTT_EVENT_DISCONNECTED:
@@ -140,10 +141,11 @@ static void mqttPublish(void *arg)
         qStatus = xQueueReceive(app_nodeResponseQueue, &nodeResponse, portMAX_DELAY);
         if (qStatus == pdPASS)
         {
-            sprintf((char*)mqttStr,"{\"MAC-Id\" : \"%s\", \"Data\" : %s}",macID,nodeResponse.data);
-            printf("\r\n");
-            printf((char*)mqttStr);
-            printf("\r\n");
+            sprintf((char*)mqttStr,"{\"NodeId\" : \"%s\", \"Data\" : %s}",macID,nodeResponse.data);
+            //printf("\r\n");
+            //printf((char*)mqttStr);
+            //printf("\r\n");
+            printf("\r\nNode publishing [%s]to topic [%s]\r\n",mqttStr,publishTopic);
             esp_mqtt_client_publish(client, publishTopic, (char*)mqttStr, 0, 1, 0);
         }
     }

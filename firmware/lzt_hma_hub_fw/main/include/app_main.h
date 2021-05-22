@@ -15,7 +15,16 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 
-
+//==============================================================================================
+#define BUTTON_IN1              GPIO_NUM_1
+#define BUTTON_IN2              GPIO_NUM_2
+#define RELAY_OUT1              GPIO_NUM_12
+#define RELAY_OUT2              GPIO_NUM_13
+#define RELAY1_ON_IND_LED       GPIO_NUM_5
+#define RELAY1_OFF_IND_LED      GPIO_NUM_4
+#define RELAY2_ON_IND_LED       GPIO_NUM_7
+#define RELAY2_OFF_IND_LED      GPIO_NUM_6
+//==============================================================================================
 #define APP_CONFIG_NODE_ID_LEN 20 //size of node ID in Bytes
 
 #define APP_CONFIG_NODE_CMD_QUEUE_SIZE 10 //maximum no of node commads that could be queued
@@ -80,6 +89,6 @@ app_status_t app_loadConfig(void);
 void app_userInputInit();
 //void app_meshInit(void);
 app_status_t app_wifiStaInit(void);
-void app_process_input_Task(void*);
-void app_process_input_takeAction(void);
+void app_process_button_input_Task(void*);
+void app_process_cmd_input_Task(void* pvParameters);
 #endif

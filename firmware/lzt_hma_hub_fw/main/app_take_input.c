@@ -59,7 +59,7 @@ void control_Ind_Led(uint32_t state){
     gpio_set_level(RELAY2_ON_IND_LED,state);
     gpio_set_level(RELAY2_OFF_IND_LED,state);
 }
-void app_take_input_AP_inicadtor_Task(){
+void app_take_input_AP_inicadtor_Task(void* arg){
     control_Ind_Led(1);
     while(1){
         if(getMilis()%1000 != 0)

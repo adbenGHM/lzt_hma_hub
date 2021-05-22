@@ -91,6 +91,11 @@ void app_main(void)
     app_loadConfig();
     if(appConfig.startMesh == false){
         ESP_LOGI(TAG, "ESP_WIFI_MODE_AP");
+        appConfig.startMesh = true;
+        app_saveConfig();
+        ap_indicator_TaskHandle = NULL;
+        initialise_timer();
+        xTaskCreate(&app_take_input_AP_inicadtor_Task, "app_take_input_AP_inicadtor_Task", 4000, NULL, configMAX_PRIORITIES - 1, &ap_indicator_TaskHandle);
         app_wifiApInit();
     }
     else{

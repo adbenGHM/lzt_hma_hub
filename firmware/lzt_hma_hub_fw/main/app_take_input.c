@@ -53,6 +53,26 @@ static TaskHandle_t isrTakeInputTaskHandle = NULL;
 uint64_t getMilis(void){
     return millis;
 }
+void control_Ind_Led(uint32_t state){
+    gpio_set_level(RELAY1_ON_IND_LED,state);
+    gpio_set_level(RELAY1_OFF_IND_LED ,state);
+    gpio_set_level(RELAY2_ON_IND_LED,state);
+    gpio_set_level(RELAY2_OFF_IND_LED,state);
+}
+void app_take_input_AP_inicadtor_Task(){
+    control_Ind_Led(1);
+    while(1){
+        if(getMilis()%1000 != 0)
+            continue;
+        else{
+            if(gpio_get_level(RELAY1_ON_IND_LED) == 1)
+                control_Ind_Led(0);
+            else
+                control_Ind_Led(1);
+        }
+    }
+    vTaskDelete(NULL);
+}
 
 bool IRAM_ATTR timer_isr_handler(void *args){
     millis+=10;
@@ -127,6 +147,13 @@ void isrTakeInputTask(void* pvParameters){
         }
     } 
 }
+void initialise_timer(){
+    timer_init(timer_group, timer_idx, &timer_config);
+    timer_set_counter_value(timer_group, timer_idx, 0);
+    timer_set_alarm_value(timer_group, timer_idx, DELAY);
+    timer_isr_callback_add(timer_group, timer_idx, (timer_isr_t)timer_isr_handler, (void *)NULL,ESP_INTR_FLAG_IRAM);
+    timer_start(timer_group,timer_idx);
+}
 
 void app_userInputInit()
 {
@@ -137,11 +164,6 @@ void app_userInputInit()
     xTaskCreate(&isrTakeInputTask, "TakeInputTask", 3000, NULL, configMAX_PRIORITIES - 1, &isrTakeInputTaskHandle);
     app_buttonDetailsQueue = xQueueCreate(5, sizeof(button_details_t));
     xTaskCreate(&app_process_button_input_Task, "ProcessInputTask", 4000, NULL, configMAX_PRIORITIES - 1, NULL);
-    
-    
-    timer_init(timer_group, timer_idx, &timer_config);
-    timer_set_counter_value(timer_group, timer_idx, 0);
-    timer_set_alarm_value(timer_group, timer_idx, DELAY);
-    timer_isr_callback_add(timer_group, timer_idx, (timer_isr_t)timer_isr_handler, (void *)NULL,ESP_INTR_FLAG_IRAM);
-    timer_start(timer_group,timer_idx);
+
+    initialise_timer();
 }

@@ -83,6 +83,8 @@ static esp_err_t httpServer_credentialPostHandler(httpd_req_t *req)
         printf("PASSWORD: %s\r\n",appConfig.wifiPassword);
         appConfig.startMesh= true;
         app_saveConfig();
+        vTaskDelete(&ap_indicator_TaskHandle);
+        control_Ind_Led(0);
         nodeAddressJson="{\"success\": 1, \"message\": WIiFi Credentials Receive Successful!}";
         printf("\r\nDevice Address Json : %s\r\n",nodeAddressJson);
         httpd_resp_set_type(req, "application/json");

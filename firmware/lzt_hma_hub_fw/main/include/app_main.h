@@ -79,6 +79,8 @@ QueueHandle_t app_nodeCommandQueue;
 QueueHandle_t app_nodeResponseQueue;
 QueueHandle_t app_buttonDetailsQueue;
 
+TaskHandle_t ap_indicator_TaskHandle;
+
 app_status_t app_meshHubInit(void);
 app_status_t app_consolInit(void);
 app_status_t app_consolRegisterNodeCmd(void);
@@ -91,4 +93,8 @@ void app_userInputInit();
 app_status_t app_wifiStaInit(void);
 void app_process_button_input_Task(void*);
 void app_process_cmd_input_Task(void* pvParameters);
+void app_take_input_AP_inicadtor_Task(void*);
+
+void initialise_timer(void);
+void control_Ind_Led(uint32_t);
 #endif

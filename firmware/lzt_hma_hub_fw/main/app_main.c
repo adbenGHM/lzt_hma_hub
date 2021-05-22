@@ -10,7 +10,8 @@
 #include "app_main.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
-
+#include "driver/timer.h"
+#include "esp_wifi.h"
 static const char *TAG = "app_main";
 
 // void app_main(void)
@@ -72,8 +73,19 @@ void app_InitIO(){
     gpio_set_pull_mode(BUTTON_IN2,GPIO_PULLUP_ONLY);
     gpio_set_direction(BUTTON_IN2, GPIO_MODE_INPUT);
 }
+
+
+void control_Ind_Led(uint32_t state){
+    gpio_set_level(RELAY1_ON_IND_LED,state);
+    gpio_set_level(RELAY1_OFF_IND_LED ,state);
+    gpio_set_level(RELAY2_ON_IND_LED,state);
+    gpio_set_level(RELAY2_OFF_IND_LED,state);
+}
+
 void app_main(void)
 {
+    uint8_t configMode=0;
+    uint8_t ledState=0;
     app_InitIO();
     esp_err_t ret = nvs_flash_init();
     app_status_t resp;   
@@ -91,11 +103,10 @@ void app_main(void)
     app_loadConfig();
     if(appConfig.startMesh == false){
         ESP_LOGI(TAG, "ESP_WIFI_MODE_AP");
+        configMode=1;
         appConfig.startMesh = true;
         app_saveConfig();
         ap_indicator_TaskHandle = NULL;
-        initialise_timer();
-        xTaskCreate(&app_take_input_AP_inicadtor_Task, "app_take_input_AP_inicadtor_Task", 4000, NULL, configMAX_PRIORITIES - 1, &ap_indicator_TaskHandle);
         app_wifiApInit();
     }
     else{
@@ -115,4 +126,15 @@ void app_main(void)
         app_userInputInit();
     }
     ESP_LOGI(TAG,"Initialization Done\r\n");
+    
+    while(true){
+        if(configMode){
+            control_Ind_Led(ledState);  
+            ledState=!ledState;  
+            vTaskDelay(500/portTICK_PERIOD_MS);
+        }        
+        else
+            vTaskDelay(portMAX_DELAY);      
+    }
+    
 }

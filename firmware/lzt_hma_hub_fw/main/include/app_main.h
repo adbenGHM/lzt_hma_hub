@@ -93,7 +93,6 @@ void app_userInputInit();
 app_status_t app_wifiStaInit(void);
 void app_process_button_input_Task(void*);
 void app_process_cmd_input_Task(void* pvParameters);
-void app_take_input_AP_inicadtor_Task(void*);
 
 void initialise_timer(void);
 void control_Ind_Led(uint32_t);

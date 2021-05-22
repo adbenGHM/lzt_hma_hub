@@ -23,14 +23,14 @@ typedef struct{
 
 static button_t buttonElemetArray[NUM_OF_BUTTON_INPUTS];
 
-button_t buttonElement0={
+static button_t buttonElement0={
     .buttonGpioNum=BUTTON_IN1,
     .buttonPressedStateLogicLevel=0,
     .eventMillis=0,
     .pressCount=0,
     .pressDetectionState=0
 };
-button_t buttonElement1={
+static button_t buttonElement1={
     .buttonGpioNum=BUTTON_IN2,
     .buttonPressedStateLogicLevel=0,
     .eventMillis=0,
@@ -38,9 +38,9 @@ button_t buttonElement1={
     .pressDetectionState=0
 };
 
-timer_group_t timer_group = TIMER_GROUP_0;
-timer_idx_t timer_idx = TIMER_0;
-timer_config_t timer_config = {
+static timer_group_t timer_group = TIMER_GROUP_0;
+static timer_idx_t timer_idx = TIMER_0;
+static timer_config_t timer_config = {
     .counter_en = TIMER_PAUSE,
     .counter_dir = TIMER_COUNT_UP,
     .alarm_en = TIMER_ALARM_EN,
@@ -53,26 +53,8 @@ static TaskHandle_t isrTakeInputTaskHandle = NULL;
 uint64_t getMilis(void){
     return millis;
 }
-void control_Ind_Led(uint32_t state){
-    gpio_set_level(RELAY1_ON_IND_LED,state);
-    gpio_set_level(RELAY1_OFF_IND_LED ,state);
-    gpio_set_level(RELAY2_ON_IND_LED,state);
-    gpio_set_level(RELAY2_OFF_IND_LED,state);
-}
-void app_take_input_AP_inicadtor_Task(void* arg){
-    control_Ind_Led(1);
-    while(1){
-        if(getMilis()%1000 != 0)
-            continue;
-        else{
-            if(gpio_get_level(RELAY1_ON_IND_LED) == 1)
-                control_Ind_Led(0);
-            else
-                control_Ind_Led(1);
-        }
-    }
-    vTaskDelete(NULL);
-}
+
+
 
 bool IRAM_ATTR timer_isr_handler(void *args){
     millis+=10;

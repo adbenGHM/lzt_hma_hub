@@ -146,7 +146,7 @@ static void mqttPublish(void *arg)
             //printf((char*)mqttStr);
             //printf("\r\n");
             printf("\r\nNode publishing [%s]to topic [%s]\r\n",mqttStr,publishTopic);
-            esp_mqtt_client_publish(client, publishTopic, (char*)mqttStr, 0, 1, 0);
+            esp_mqtt_client_publish(client, publishTopic, (char*)mqttStr, 0, 1, 1);
         }
     }
     vTaskDelete(NULL);

@@ -115,15 +115,16 @@ void app_main(void)
         resp=app_wifiStaInit();
         if(resp != APP_STATUS_OK)
         {
-            while(1){
-                printf("Error\r\n");
-            }
+
         }
         app_nodeCommandQueue = xQueueCreate(APP_CONFIG_NODE_CMD_QUEUE_SIZE, sizeof(app_nodeData_t));
         app_nodeResponseQueue = xQueueCreate(APP_CONFIG_NODE_RESPONSE_QUEUE_SIZE, sizeof(app_nodeData_t));
         xTaskCreate(&app_process_cmd_input_Task, "app_process_cmd_input_Task", 4000, NULL, configMAX_PRIORITIES - 1, NULL);
         app_mqttClientInit();
         app_userInputInit();
+        app_nodeData_t nodeResponse;
+	    sprintf(nodeResponse.data,"{\"d1\" : \"%d\",\"d2\" : \"%d\"}",gpio_get_level(RELAY_OUT1),gpio_get_level(RELAY_OUT2));
+	    xQueueSend(app_nodeResponseQueue, &nodeResponse, 0);  
     }
     ESP_LOGI(TAG,"Initialization Done\r\n");
     while(true){

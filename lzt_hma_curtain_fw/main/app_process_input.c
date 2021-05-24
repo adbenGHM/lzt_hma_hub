@@ -1,6 +1,6 @@
 #include "app_main.h"
 
-#define AUTO_CUTOFF_MILLIS 10000
+
 
 TaskHandle_t auto_Cutoff_Task_Handle = NULL;
 
@@ -13,9 +13,9 @@ void auto_Cutoff_Task(void* pvParameters){
             app_nodeData_t nodeCmd;
             memset(nodeCmd.data,'\0',sizeof(nodeCmd.data));
             if(swt==2)
-                strcpy(nodeCmd.data, "{\"d2\" : \"0\"}");
+                strcpy(nodeCmd.data, "{\"d2\":\"0\"}");
             else
-                strcpy(nodeCmd.data, "{\"d1\" : \"0\"}");
+                strcpy(nodeCmd.data, "{\"d1\":\"0\"}");
             xQueueSend(app_nodeCommandQueue, &nodeCmd, 0);
             break;
         }
@@ -27,7 +27,7 @@ void auto_Cutoff_Task(void* pvParameters){
             break;
         vTaskDelay(10/ portTICK_PERIOD_MS);
     }
-    auto_Cutoff_Task_Handle = NULL;
+    //printf("\r\nRelay Control Timer Task deleted\r\n");
     vTaskDelete(NULL);
 }
 void app_process_cmd_input_Task(void* pvParameters){
@@ -42,42 +42,42 @@ void app_process_cmd_input_Task(void* pvParameters){
             char *colon = strstr(nodeCmd.data, ":");
             uint8_t state=0;
             if(ptr != NULL && colon != NULL){
-                if(gpio_get_level(GPIO_NUM_12) == 0)
+                if(gpio_get_level(RELAY_OUT1) == 0)
                 {
-                    state=*(ptr + strlen("d2\" : ")+1);
+                    state=*(ptr + strlen("d2\":")+1);
                     state -= 48;        //ASCII of 0: 48
-                    gpio_set_level(GPIO_NUM_6,(uint8_t)!state);      //Control red led
-                    gpio_set_level(GPIO_NUM_7,(uint8_t)state);       //Control green led
-                    gpio_set_level(GPIO_NUM_13,(uint8_t)state);      //Control RELAY 2
-                    sprintf(nodeResponse.data,"{\"d2\" : \"%d\"}",state);
+                    gpio_set_level(RELAY2_OFF_IND_LED,(uint8_t)!state);      //Control red led
+                    gpio_set_level(RELAY2_ON_IND_LED,(uint8_t)state);       //Control green led
+                    gpio_set_level(RELAY_OUT2,(uint8_t)state);      //Control RELAY 2
+                    sprintf(nodeResponse.data,"{\"d1\" : \"%d\",\"d2\" : \"%d\"}",gpio_get_level(RELAY_OUT1),state);
                     if((uint8_t)state == 1){
                         swt = 2;
-                        xTaskCreate(&auto_Cutoff_Task, "auto_Cutoff_Task", 1000, (void*)&swt, 2, &auto_Cutoff_Task_Handle);
+                        xTaskCreate(&auto_Cutoff_Task, "auto_Cutoff_Task", 1000, (void*)&swt, configMAX_PRIORITIES - 1 , &auto_Cutoff_Task_Handle);
                     }
                 }
                 else
-                    sprintf(nodeResponse.data,"{\"d2\" : \"0\"}");
+                    sprintf(nodeResponse.data,"{\"d1\" : \"%d\",\"d2\" : \"%d\"}",gpio_get_level(RELAY_OUT1),0);
             }
             else{
                 ptr = strstr(nodeCmd.data, "d1");
                 if(ptr != NULL && colon != NULL)
                 {
-                    if(gpio_get_level(GPIO_NUM_13) == 0)
+                    if(gpio_get_level(RELAY_OUT2) == 0)
                     {
                         
-                        state=*(ptr + strlen("d1\" : ")+1);
+                        state=*(ptr + strlen("d1\":")+1);
                         state -= 48;        //ASCII of 0: 48
-                        gpio_set_level(GPIO_NUM_4,(uint8_t)!state);    //Control red led
-                        gpio_set_level(GPIO_NUM_5,(uint8_t)state);     //Control green led 
-                        gpio_set_level(GPIO_NUM_12,(uint8_t)state);    //Control RELAY 1
-                        sprintf(nodeResponse.data,"{\"d1\" : \"%d\"}",state);
+                        gpio_set_level(RELAY1_OFF_IND_LED,(uint8_t)!state);    //Control red led
+                        gpio_set_level(RELAY1_ON_IND_LED,(uint8_t)state);     //Control green led 
+                        gpio_set_level(RELAY_OUT1,(uint8_t)state);    //Control RELAY 1
+                        sprintf(nodeResponse.data,"{\"d1\" : \"%d\",\"d2\" : \"%d\"}",state,gpio_get_level(RELAY_OUT2));
                         if((uint8_t)state == 1){
                             swt = 1;
-                            xTaskCreate(&auto_Cutoff_Task, "auto_Cutoff_Task", 1000, (void *)&swt, 2, &auto_Cutoff_Task_Handle);
+                            xTaskCreate(&auto_Cutoff_Task, "auto_Cutoff_Task", 1000, (void*)&swt, configMAX_PRIORITIES - 1 , &auto_Cutoff_Task_Handle);
                         }
                     }
                     else
-                        sprintf(nodeResponse.data,"{\"d1\" : \"0\"}");
+                        sprintf(nodeResponse.data,"{\"d1\" : \"%d\",\"d2\" : \"%d\"}",0,gpio_get_level(RELAY_OUT2));
                 }
             }
             memset(nodeCmd.data,'\0',sizeof(nodeCmd.data));
@@ -98,19 +98,19 @@ void app_process_button_input_Task(void* pvParameters){
                     printf("Button [%d] pressed Once\r\n",button_details_receive.buttonGpioNum);
                     if(button_details_receive.buttonGpioNum==BUTTON_IN2){
                         if(gpio_get_level(RELAY_OUT2) == 1){  //if GREEN ON
-                            strcpy(nodeCmd.data, "{\"d2\" : \"0\"}");
+                            strcpy(nodeCmd.data, "{\"d2\":\"0\"}");
                         }
                         else{
-                            strcpy(nodeCmd.data, "{\"d2\" : \"1\"}");
+                            strcpy(nodeCmd.data, "{\"d2\":\"1\"}");
                         }
                         xQueueSend(app_nodeCommandQueue, &nodeCmd, 0);
                         
                     }else if(button_details_receive.buttonGpioNum==BUTTON_IN1){
                         if(gpio_get_level(RELAY_OUT1) == 1){  //if GREEN ON
-                            strcpy(nodeCmd.data, "{\"d1\" : \"0\"}");
+                            strcpy(nodeCmd.data, "{\"d1\":\"0\"}");
                         }
                         else{
-                            strcpy(nodeCmd.data, "{\"d1\" : \"1\"}");
+                            strcpy(nodeCmd.data, "{\"d1\":\"1\"}");
                         }
                         xQueueSend(app_nodeCommandQueue, &nodeCmd, 0);
                     }
@@ -127,10 +127,10 @@ void app_process_button_input_Task(void* pvParameters){
                 case 5:
                     printf("Button [%d] pressed 5 times\r\n",button_details_receive.buttonGpioNum);
                     appConfig.startMesh = false;
-                    gpio_set_level(GPIO_NUM_4,0);      
-                    gpio_set_level(GPIO_NUM_5,0); 
-                    gpio_set_level(GPIO_NUM_6,0);      
-                    gpio_set_level(GPIO_NUM_7,0); 
+                    gpio_set_level(RELAY1_ON_IND_LED,0);      
+                    gpio_set_level(RELAY1_OFF_IND_LED,0); 
+                    gpio_set_level(RELAY2_ON_IND_LED,0);      
+                    gpio_set_level(RELAY2_OFF_IND_LED,0); 
                     app_saveConfig();
                     vTaskDelay(1000/portTICK_PERIOD_MS);
                     esp_restart();

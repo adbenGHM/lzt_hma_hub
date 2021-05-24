@@ -30,7 +30,7 @@
 #define APP_CONFIG_NODE_CMD_QUEUE_SIZE 10 //maximum no of node commads that could be queued
 #define APP_CONFIG_NODE_RESPONSE_QUEUE_SIZE 10 //maximum no fo repose from node that can be queued 
 
-#define APP_CONFIG_MQTT_BROKER_URL "mqtt://test.mosquitto.org"
+#define APP_CONFIG_MQTT_BROKER_URL "mqtt://3.128.241.99"
 #define APP_CONFIG_MQTT_BROKER_PORT "1883"
 
 //==============================MUST BE SAME FOR BOTH NODE AND HUB==============================
@@ -78,8 +78,6 @@ typedef struct{
 QueueHandle_t app_nodeCommandQueue; 
 QueueHandle_t app_nodeResponseQueue;
 QueueHandle_t app_buttonDetailsQueue;
-
-TaskHandle_t ap_indicator_TaskHandle;
 
 app_status_t app_meshHubInit(void);
 app_status_t app_consolInit(void);

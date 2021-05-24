@@ -24,6 +24,7 @@
 #define RELAY1_OFF_IND_LED      GPIO_NUM_4
 #define RELAY2_ON_IND_LED       GPIO_NUM_7
 #define RELAY2_OFF_IND_LED      GPIO_NUM_6
+#define AUTO_CUTOFF_MILLIS 10000
 //==============================================================================================
 #define APP_CONFIG_NODE_ID_LEN 20 //size of node ID in Bytes
 

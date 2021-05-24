@@ -12,39 +12,31 @@
 #define APP_CONFIG_AP_WIFI_PASS         "esp@connect"
 #define APP_CONFIG_AP_WIFI_CHANNEL      1
 #define APP_CONFIG_AP_WIFI_MAX_STA_CONN 5
-#define ESP_MESH_HUB_ID "24:1a:c4:af:4c:fc"
+//#define ESP_MESH_HUB_ID "24:1a:c4:af:4c:fc"
 
 #define MIN(a, b) a > b ? b : a
 
 static uint8_t freshScanInProgress = 0;
 static const char *TAG = "wifi softAP";
-// Purpose : Get device info from mobile
-// URL : http://<static ip>:<port>/device_info
-// Method : GET
-// Response type : application/json
-// Response body : {"id": <device id in string>, "device_type": <device type in string>}
-// Response Code : 200
-
-
-// Purpose : Set config to the device from mobile
-// URL : http://<static ip>:<port>/set_config
-// Method : POST
-// Request type : application/json
-// Request body : {"ssid": <wifi ssid in string>, "password": <wifi password in string>}
-// Response type : application/json
-// Response body : {"success": <1 or 0>, "message": <success / error message in string>}
-// Response Code : 200
 
 static esp_err_t httpServer_infoGettUriHandler(httpd_req_t *req){
     ESP_LOGI(TAG, "GET DEVICE JSON REQUEST");
-    char nodeAddressJson[]="{\"id\": \""ESP_MESH_HUB_ID"\", \"device_type\": \"Single Channel Switch\"}";
+    uint8_t derived_mac_addr[6] = {0};
+    char macID[18];
+    char nodeAddressJson[200];
+    ESP_ERROR_CHECK(esp_read_mac(derived_mac_addr, ESP_MAC_WIFI_STA));
+    sprintf(macID, "%x:%x:%x:%x:%x:%x", derived_mac_addr[0], derived_mac_addr[1], derived_mac_addr[2],
+                                        derived_mac_addr[3], derived_mac_addr[4], derived_mac_addr[5]);
+   
+    sprintf(nodeAddressJson,"{\"id\": \"%s\", \"device_type\": \"Single Channel Switch\"}",macID);
     printf("\r\nDevice Address Json : %s\r\n",nodeAddressJson);
+    httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");
     httpd_resp_set_type(req, "application/json");
     httpd_resp_send(req, nodeAddressJson, HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 static const httpd_uri_t httpServer_infoGettUri = {
-    .uri = "/device_info",
+    .uri = "/device_demo/device_info/",
     .method = HTTP_GET,
     .handler = httpServer_infoGettUriHandler,
     .user_ctx = NULL};
@@ -83,8 +75,7 @@ static esp_err_t httpServer_credentialPostHandler(httpd_req_t *req)
         printf("PASSWORD: %s\r\n",appConfig.wifiPassword);
         appConfig.startMesh= true;
         app_saveConfig();
-        control_Ind_Led(0);
-        nodeAddressJson="{\"success\": 1, \"message\": WIiFi Credentials Receive Successful!}";
+        nodeAddressJson="{\"success\": \"1\", \"message\": \"WIiFi Credentials Receive Successful!\"}";
         printf("\r\nDevice Address Json : %s\r\n",nodeAddressJson);
         httpd_resp_set_type(req, "application/json");
         httpd_resp_send(req, nodeAddressJson, HTTPD_RESP_USE_STRLEN);
@@ -92,17 +83,35 @@ static esp_err_t httpServer_credentialPostHandler(httpd_req_t *req)
         esp_restart(); //Restrating CPU on Successful Credential Receive
     }
     else{
-        nodeAddressJson="{\"success\": 0, \"message\": WIiFi Credentials Received Failed!}";
+        nodeAddressJson="{\"success\": \"0\", \"message\": \"WIiFi Credentials Received Failed!\"}";
         printf("\r\nDevice Address Json : %s\r\n",nodeAddressJson);
         httpd_resp_set_type(req, "application/json");
+        httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");
         httpd_resp_send(req, nodeAddressJson, HTTPD_RESP_USE_STRLEN);
     }
     return ESP_OK;
 }
 static const httpd_uri_t httpServer_credentialPostUri = {
-    .uri = "/set_config",
+    .uri = "/device_demo/set_config/",
     .method = HTTP_POST,
     .handler = httpServer_credentialPostHandler,
+    .user_ctx = NULL
+};
+
+static esp_err_t httpServer_optionsHandler(httpd_req_t *req)
+{    
+    printf("\r\nServed options request\r\n");
+    httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");
+    httpd_resp_set_hdr(req,"Access-Control-Allow-Methods","*");
+    httpd_resp_set_hdr(req,"Access-Control-Allow-Headers", "X-PINGOTHER, Content-Type");
+    httpd_resp_set_hdr(req,"Access-Control-Max-Age", "86400");
+    httpd_resp_send(req, NULL, 0);    
+    return ESP_OK;
+}
+static const httpd_uri_t httpServer_optionsUri = {
+    .uri = "/device_demo/set_config/",
+    .method = HTTP_OPTIONS,
+    .handler = httpServer_optionsHandler,
     .user_ctx = NULL
 };
 static httpd_handle_t start_webserver(void)
@@ -117,17 +126,9 @@ static httpd_handle_t start_webserver(void)
     {
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
-        //httpd_register_uri_handler(server, &httpServer_faviconGetUri);
-        //httpd_register_uri_handler(server, &httpServer_getUri);
-        // httpd_register_uri_handler(server, &httpServer_jqueryGetUri);
-        // httpd_register_uri_handler(server, &httpServer_setupCssGetUri);
-        // httpd_register_uri_handler(server, &httpServer_setupJsGetUri);
-        // httpd_register_uri_handler(server, &httpServer_setupHtmlGetUri);
         httpd_register_uri_handler(server, &httpServer_credentialPostUri);
         httpd_register_uri_handler(server, &httpServer_infoGettUri);
-        // httpd_register_uri_handler(server, &httpServer_scannedAccessPointsJsonGetUri);
-        // httpd_register_uri_handler(server, &httpServer_deviceListJsonGetUri);
-        // httpd_register_err_handler(server, HTTPD_404_NOT_FOUND, httpServer_errorHandler);
+        httpd_register_uri_handler(server, &httpServer_optionsUri);
         return server;
     }
 

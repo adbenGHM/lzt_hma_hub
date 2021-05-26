@@ -45,7 +45,7 @@ void app_InitIO(){
         //set as output mode
         .mode = GPIO_MODE_INPUT_OUTPUT,
         //bit mask of the pins that you want to set,e.g.GPIO18/19
-        .pin_bit_mask = (1ULL << RELAY1_ON_IND_LED) | (1ULL << RELAY1_OFF_IND_LED) | ((1ULL << RELAY2_ON_IND_LED) | (1ULL << RELAY2_OFF_IND_LED) |  (1ULL << RELAY_OUT1) | (1ULL << RELAY_OUT2)),
+        .pin_bit_mask = (1ULL << RELAY1_ON_IND_LED) | (1ULL << RELAY1_OFF_IND_LED) |  (1ULL << RELAY_OUT1) ,
         //disable pull-down mode
         .pull_down_en = 0,
         //disable pull-up mode
@@ -56,37 +56,28 @@ void app_InitIO(){
     gpio_set_level(RELAY1_OFF_IND_LED,1); //red
     gpio_set_level(RELAY1_ON_IND_LED,0); //green
 
-    //button 1
-    gpio_set_level(RELAY2_OFF_IND_LED,1); //red
-    gpio_set_level(RELAY2_ON_IND_LED,0); //green
+   
 
     gpio_set_direction(RELAY_OUT1, GPIO_MODE_INPUT_OUTPUT);
     gpio_set_level(RELAY_OUT1,0);
-    gpio_set_direction(RELAY_OUT1, GPIO_MODE_INPUT_OUTPUT);
-    gpio_set_level(RELAY_OUT2,0);
+
     
     gpio_pad_select_gpio(BUTTON_IN1);
     gpio_set_pull_mode(BUTTON_IN1,GPIO_PULLUP_ONLY);
     gpio_set_direction(BUTTON_IN1, GPIO_MODE_INPUT);
 
-    gpio_pad_select_gpio(BUTTON_IN2);
-    gpio_set_pull_mode(BUTTON_IN2,GPIO_PULLUP_ONLY);
-    gpio_set_direction(BUTTON_IN2, GPIO_MODE_INPUT);
 }
 
 
 void control_Ind_Led(uint32_t state){
     gpio_set_level(RELAY1_ON_IND_LED,state);
     gpio_set_level(RELAY1_OFF_IND_LED ,state);
-    gpio_set_level(RELAY2_ON_IND_LED,state);
-    gpio_set_level(RELAY2_OFF_IND_LED,state);
 }
 
 void app_main(void)
 {
     uint8_t configMode=0;
     uint8_t ledState=0;
-    app_millis = 0;
     app_InitIO();
     esp_err_t ret = nvs_flash_init();
     app_status_t resp;   
@@ -111,22 +102,29 @@ void app_main(void)
     }
     else{
         // app_meshInit();
-        ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
-        resp=app_wifiStaInit();
-        if(resp != APP_STATUS_OK)
-        {
-
+        if(strlen((char*)appConfig.wifiSsid)>0 && strlen((char*)appConfig.wifiPassword)>0){
+            ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
+            resp=app_wifiStaInit();
+            if(resp != APP_STATUS_OK)
+            {
+                // while(1){
+                //     printf("Error\r\n");
+                //     vTaskDelay(5000/portTICK_PERIOD_MS);
+                // }
+            }
         }
+        else{
+            printf("\r\nPlease configure the device\r\n");
+        }
+        
         app_nodeCommandQueue = xQueueCreate(APP_CONFIG_NODE_CMD_QUEUE_SIZE, sizeof(app_nodeData_t));
         app_nodeResponseQueue = xQueueCreate(APP_CONFIG_NODE_RESPONSE_QUEUE_SIZE, sizeof(app_nodeData_t));
         xTaskCreate(&app_process_cmd_input_Task, "app_process_cmd_input_Task", 4000, NULL, configMAX_PRIORITIES - 1, NULL);
         app_mqttClientInit();
         app_userInputInit();
-        app_nodeData_t nodeResponse;
-	    sprintf(nodeResponse.data,"{\"d1\" : \"%d\",\"d2\" : \"%d\"}",gpio_get_level(RELAY_OUT1),gpio_get_level(RELAY_OUT2));
-	    xQueueSend(app_nodeResponseQueue, &nodeResponse, 0);  
     }
     ESP_LOGI(TAG,"Initialization Done\r\n");
+    
     while(true){
         if(configMode){
             control_Ind_Led(ledState);  

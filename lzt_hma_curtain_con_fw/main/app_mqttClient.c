@@ -91,6 +91,7 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 {
     esp_mqtt_client_handle_t client = event->client;
     int msg_id;
+    app_nodeData_t nodeResponse;
     // your_context_t *context = event->context;
     switch (event->event_id)
     {
@@ -99,6 +100,9 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
         msg_id = esp_mqtt_client_subscribe(client, subscribeTopic, 0);
         printf("\r\nNode Subscribed to topic [%s]\r\n",subscribeTopic);
         ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+        ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+        sprintf(nodeResponse.data,"{\"d1\" : \"%d\",\"d2\" : \"%d\"}",gpio_get_level(RELAY_OUT1),gpio_get_level(RELAY_OUT2));
+        xQueueSend(app_nodeResponseQueue, &nodeResponse, 0); 
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");

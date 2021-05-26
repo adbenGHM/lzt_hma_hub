@@ -8,8 +8,8 @@
 
 #include "app_main.h"
 
-#define APP_CONFIG_AP_WIFI_SSID         "esp32_ap"
-#define APP_CONFIG_AP_WIFI_PASS         "esp@connect"
+#define APP_CONFIG_AP_WIFI_SSID         "lazot"
+#define APP_CONFIG_AP_WIFI_PASS         "12345678"
 #define APP_CONFIG_AP_WIFI_CHANNEL      1
 #define APP_CONFIG_AP_WIFI_MAX_STA_CONN 5
 //#define ESP_MESH_HUB_ID "24:1a:c4:af:4c:fc"
@@ -27,11 +27,11 @@ static esp_err_t httpServer_infoGettUriHandler(httpd_req_t *req){
     ESP_ERROR_CHECK(esp_read_mac(derived_mac_addr, ESP_MAC_WIFI_STA));
     sprintf(macID, "%x:%x:%x:%x:%x:%x", derived_mac_addr[0], derived_mac_addr[1], derived_mac_addr[2],
                                         derived_mac_addr[3], derived_mac_addr[4], derived_mac_addr[5]);
-   
-    sprintf(nodeAddressJson,"{\"id\": \"%s\", \"device_type\": \"Single Channel Switch\"}",macID);
+    
+    sprintf(nodeAddressJson,"{\"id\": \"%s\", \"device_type\": \"2 Channel Switch\"}",macID);
     printf("\r\nDevice Address Json : %s\r\n",nodeAddressJson);
-    httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");
     httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");
     httpd_resp_send(req, nodeAddressJson, HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
@@ -78,6 +78,7 @@ static esp_err_t httpServer_credentialPostHandler(httpd_req_t *req)
         nodeAddressJson="{\"success\": \"1\", \"message\": \"WIiFi Credentials Receive Successful!\"}";
         printf("\r\nDevice Address Json : %s\r\n",nodeAddressJson);
         httpd_resp_set_type(req, "application/json");
+        httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");
         httpd_resp_send(req, nodeAddressJson, HTTPD_RESP_USE_STRLEN);
         vTaskDelay(1000 / portTICK_PERIOD_MS);
         esp_restart(); //Restrating CPU on Successful Credential Receive

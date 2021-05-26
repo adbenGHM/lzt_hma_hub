@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := lazot_hma_curtain_fw
+PROJECT_NAME := curtain_con
 
 include $(IDF_PATH)/make/project.mk
 

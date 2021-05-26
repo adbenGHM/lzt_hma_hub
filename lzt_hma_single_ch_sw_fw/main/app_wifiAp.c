@@ -8,8 +8,8 @@
 
 #include "app_main.h"
 
-#define APP_CONFIG_AP_WIFI_SSID         "esp32_ap"
-#define APP_CONFIG_AP_WIFI_PASS         "esp@connect"
+#define APP_CONFIG_AP_WIFI_SSID         "lazot"
+#define APP_CONFIG_AP_WIFI_PASS         "12345678"
 #define APP_CONFIG_AP_WIFI_CHANNEL      1
 #define APP_CONFIG_AP_WIFI_MAX_STA_CONN 5
 //#define ESP_MESH_HUB_ID "24:1a:c4:af:4c:fc"
@@ -18,32 +18,17 @@
 
 static uint8_t freshScanInProgress = 0;
 static const char *TAG = "wifi softAP";
-// Purpose : Get device info from mobile
-// URL : http://<static ip>:<port>/device_info
-// Method : GET
-// Response type : application/json
-// Response body : {"id": <device id in string>, "device_type": <device type in string>}
-// Response Code : 200
-
-
-// Purpose : Set config to the device from mobile
-// URL : http://<static ip>:<port>/set_config
-// Method : POST
-// Request type : application/json
-// Request body : {"ssid": <wifi ssid in string>, "password": <wifi password in string>}
-// Response type : application/json
-// Response body : {"success": <1 or 0>, "message": <success / error message in string>}
-// Response Code : 200
 
 static esp_err_t httpServer_infoGettUriHandler(httpd_req_t *req){
     ESP_LOGI(TAG, "GET DEVICE JSON REQUEST");
     uint8_t derived_mac_addr[6] = {0};
     char macID[18];
+    char nodeAddressJson[200];
     ESP_ERROR_CHECK(esp_read_mac(derived_mac_addr, ESP_MAC_WIFI_STA));
     sprintf(macID, "%x:%x:%x:%x:%x:%x", derived_mac_addr[0], derived_mac_addr[1], derived_mac_addr[2],
                                         derived_mac_addr[3], derived_mac_addr[4], derived_mac_addr[5]);
-    char nodeAddressJson[200];
-    sprintf(nodeAddressJson,"{\"id\": \"%s\", \"device_type\": \"2 Channel Switch\"}",macID);
+    
+    sprintf(nodeAddressJson,"{\"id\": \"%s\", \"device_type\": \"20 A Switch\"}",macID);
     printf("\r\nDevice Address Json : %s\r\n",nodeAddressJson);
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");
@@ -142,18 +127,9 @@ static httpd_handle_t start_webserver(void)
     {
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
-        //httpd_register_uri_handler(server, &httpServer_faviconGetUri);
-        //httpd_register_uri_handler(server, &httpServer_getUri);
-        // httpd_register_uri_handler(server, &httpServer_jqueryGetUri);
-        // httpd_register_uri_handler(server, &httpServer_setupCssGetUri);
-        // httpd_register_uri_handler(server, &httpServer_setupJsGetUri);
-        // httpd_register_uri_handler(server, &httpServer_setupHtmlGetUri);
         httpd_register_uri_handler(server, &httpServer_credentialPostUri);
         httpd_register_uri_handler(server, &httpServer_infoGettUri);
-         httpd_register_uri_handler(server, &httpServer_optionsUri);
-        // httpd_register_uri_handler(server, &httpServer_scannedAccessPointsJsonGetUri);
-        // httpd_register_uri_handler(server, &httpServer_deviceListJsonGetUri);
-        // httpd_register_err_handler(server, HTTPD_404_NOT_FOUND, httpServer_errorHandler);
+        httpd_register_uri_handler(server, &httpServer_optionsUri);
         return server;
     }
 

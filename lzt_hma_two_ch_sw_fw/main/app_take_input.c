@@ -7,10 +7,11 @@
 
 #define MINIMUM_BUTTON_PRESS_PERIOD     100     //in miliseconds
 #define MINIMUM_BUTTON_RELEASE_PERIOD   100     //in milliseconds
-#define MAXIMUM_RELESE_PERIOD_BETWEEN_CONSICUTIVE_PRESS 500
+#define MAXIMUM_RELESE_PERIOD_BETWEEN_CONSICUTIVE_PRESS 800
 
 #define NUM_OF_BUTTON_INPUTS    2
 
+static uint64_t millis = 0;
 typedef struct{
     gpio_num_t buttonGpioNum;
     uint8_t buttonPressedStateLogicLevel;  
@@ -50,13 +51,13 @@ static timer_config_t timer_config = {
 static TaskHandle_t isrTakeInputTaskHandle = NULL;
 
 uint64_t getMilis(void){
-    return app_millis;
+    return millis;
 }
 
 
 
 bool IRAM_ATTR timer_isr_handler(void *args){
-    app_millis+=10;
+    millis+=10;
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     vTaskNotifyGiveFromISR(isrTakeInputTaskHandle, &xHigherPriorityTaskWoken);
     if(xHigherPriorityTaskWoken==pdTRUE)

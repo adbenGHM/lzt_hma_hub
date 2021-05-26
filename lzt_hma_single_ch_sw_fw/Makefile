@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := lzt_hma_hub
+PROJECT_NAME := two_ch_sw
 
 include $(IDF_PATH)/make/project.mk
 

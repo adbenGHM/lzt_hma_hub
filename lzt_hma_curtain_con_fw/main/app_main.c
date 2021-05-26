@@ -86,6 +86,7 @@ void app_main(void)
 {
     uint8_t configMode=0;
     uint8_t ledState=0;
+    app_millis = 0;
     app_InitIO();
     esp_err_t ret = nvs_flash_init();
     app_status_t resp;   
@@ -110,32 +111,19 @@ void app_main(void)
     }
     else{
         // app_meshInit();
-        if(strlen((char*)appConfig.wifiSsid)>0 && strlen((char*)appConfig.wifiPassword)>0){
-            ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
-            resp=app_wifiStaInit();
-            if(resp != APP_STATUS_OK)
-            {
-                // while(1){
-                //     printf("Error\r\n");
-                //     vTaskDelay(5000/portTICK_PERIOD_MS);
-                // }
-            }
+        ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
+        resp=app_wifiStaInit();
+        if(resp != APP_STATUS_OK)
+        {
+
         }
-        else{
-            printf("\r\nPlease configure the device\r\n");
-        }
-        
         app_nodeCommandQueue = xQueueCreate(APP_CONFIG_NODE_CMD_QUEUE_SIZE, sizeof(app_nodeData_t));
         app_nodeResponseQueue = xQueueCreate(APP_CONFIG_NODE_RESPONSE_QUEUE_SIZE, sizeof(app_nodeData_t));
         xTaskCreate(&app_process_cmd_input_Task, "app_process_cmd_input_Task", 4000, NULL, configMAX_PRIORITIES - 1, NULL);
         app_mqttClientInit();
         app_userInputInit();
-        app_nodeData_t nodeResponse;
-        sprintf(nodeResponse.data,"{\"d1\" : \"%d\",\"d2\" : \"%d\"}",gpio_get_level(RELAY_OUT1),gpio_get_level(RELAY_OUT2));
-        xQueueSend(app_nodeResponseQueue, &nodeResponse, 0);  
     }
     ESP_LOGI(TAG,"Initialization Done\r\n");
-    
     while(true){
         if(configMode){
             control_Ind_Led(ledState);  

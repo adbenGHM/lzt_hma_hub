@@ -110,15 +110,21 @@ void app_main(void)
     }
     else{
         // app_meshInit();
-        ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
-        resp=app_wifiStaInit();
-        if(resp != APP_STATUS_OK)
-        {
-            // while(1){
-            //     printf("Error\r\n");
-            //     vTaskDelay(5000/portTICK_PERIOD_MS);
-            // }
+        if(strlen((char*)appConfig.wifiSsid)>0 && strlen((char*)appConfig.wifiPassword)>0){
+            ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
+            resp=app_wifiStaInit();
+            if(resp != APP_STATUS_OK)
+            {
+                // while(1){
+                //     printf("Error\r\n");
+                //     vTaskDelay(5000/portTICK_PERIOD_MS);
+                // }
+            }
         }
+        else{
+            printf("\r\nPlease configure the device\r\n");
+        }
+        
         app_nodeCommandQueue = xQueueCreate(APP_CONFIG_NODE_CMD_QUEUE_SIZE, sizeof(app_nodeData_t));
         app_nodeResponseQueue = xQueueCreate(APP_CONFIG_NODE_RESPONSE_QUEUE_SIZE, sizeof(app_nodeData_t));
         xTaskCreate(&app_process_cmd_input_Task, "app_process_cmd_input_Task", 4000, NULL, configMAX_PRIORITIES - 1, NULL);

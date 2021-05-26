@@ -79,7 +79,9 @@ app_status_t app_wifiStaInit(void)
         },
     };
     strcpy((char*)wifi_config.sta.ssid,(char*)appConfig.wifiSsid);
+    printf("\r\nSSID : %s\r\n",(char*)appConfig.wifiSsid);
     strcpy((char*)wifi_config.sta.password,(char*)appConfig.wifiPassword);
+    printf("\r\nPass : %s\r\n",(char*)appConfig.wifiPassword);
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());

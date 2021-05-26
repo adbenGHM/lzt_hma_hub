@@ -43,7 +43,7 @@ static esp_err_t httpServer_infoGettUriHandler(httpd_req_t *req){
     sprintf(macID, "%x:%x:%x:%x:%x:%x", derived_mac_addr[0], derived_mac_addr[1], derived_mac_addr[2],
                                         derived_mac_addr[3], derived_mac_addr[4], derived_mac_addr[5]);
     char nodeAddressJson[200];
-    sprintf(nodeAddressJson,"{\"id\": \"%s\", \"device_type\": \"Single Channel Switch\"}",macID);
+    sprintf(nodeAddressJson,"{\"id\": \"%s\", \"device_type\": \"2 Channel Switch\"}",macID);
     printf("\r\nDevice Address Json : %s\r\n",nodeAddressJson);
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");

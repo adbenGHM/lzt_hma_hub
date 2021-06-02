@@ -17,13 +17,13 @@
 
 //==============================================================================================
 #define BUTTON_IN1              GPIO_NUM_1
-#define BUTTON_IN2              GPIO_NUM_2
+//#define BUTTON_IN2              GPIO_NUM_2
 #define RELAY_OUT1              GPIO_NUM_12
-#define RELAY_OUT2              GPIO_NUM_13
+//#define RELAY_OUT2              GPIO_NUM_13
 #define RELAY1_ON_IND_LED       GPIO_NUM_5
 #define RELAY1_OFF_IND_LED      GPIO_NUM_4
-#define RELAY2_ON_IND_LED       GPIO_NUM_7
-#define RELAY2_OFF_IND_LED      GPIO_NUM_6
+//#define RELAY2_ON_IND_LED       GPIO_NUM_7
+//#define RELAY2_OFF_IND_LED      GPIO_NUM_6
 //==============================================================================================
 #define APP_CONFIG_NODE_ID_LEN 20 //size of node ID in Bytes
 
@@ -94,7 +94,4 @@ void app_process_cmd_input_Task(void* pvParameters);
 
 void initialise_timer(void);
 void control_Ind_Led(uint32_t);
-
-//TODO : notification for wifi not connected
-//TODO : disconnected from internet
 #endif

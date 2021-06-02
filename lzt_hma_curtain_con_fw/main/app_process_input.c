@@ -122,10 +122,10 @@ void app_process_button_input_Task(void* pvParameters){
                     printf("Button [%d] pressed Thrice\r\n",button_details_receive.buttonGpioNum);
                     break;
                 case 4:
-                    printf("Button [%d] pressed 4 times\r\n",button_details_receive.buttonGpioNum);
-                    break;
                 case 5:
-                    printf("Button [%d] pressed 5 times\r\n",button_details_receive.buttonGpioNum);
+                case 6:
+                case 7:
+                    printf("Button [%d] pressed %d times\r\n",button_details_receive.buttonGpioNum, button_details_receive.pressCount);
                     appConfig.startMesh = false;
                     gpio_set_level(RELAY1_ON_IND_LED,0);      
                     gpio_set_level(RELAY1_OFF_IND_LED,0); 

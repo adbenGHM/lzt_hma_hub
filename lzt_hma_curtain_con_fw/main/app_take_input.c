@@ -2,12 +2,12 @@
 #include "driver/timer.h"
 #include "esp_wifi.h"
 
-#define DELAY                   10000  //in microseconds
+#define DELAY                   1000  //in microseconds
 
 
-#define MINIMUM_BUTTON_PRESS_PERIOD     100     //in miliseconds
-#define MINIMUM_BUTTON_RELEASE_PERIOD   100     //in milliseconds
-#define MAXIMUM_RELESE_PERIOD_BETWEEN_CONSICUTIVE_PRESS 800
+#define MINIMUM_BUTTON_PRESS_PERIOD     50     //in miliseconds
+#define MINIMUM_BUTTON_RELEASE_PERIOD   50     //in milliseconds
+#define MAXIMUM_RELESE_PERIOD_BETWEEN_CONSICUTIVE_PRESS 500
 
 #define NUM_OF_BUTTON_INPUTS    2
 
@@ -56,7 +56,7 @@ uint64_t getMilis(void){
 
 
 bool IRAM_ATTR timer_isr_handler(void *args){
-    app_millis+=10;
+    app_millis+=1;
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     vTaskNotifyGiveFromISR(isrTakeInputTaskHandle, &xHigherPriorityTaskWoken);
     if(xHigherPriorityTaskWoken==pdTRUE)

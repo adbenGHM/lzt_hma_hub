@@ -49,7 +49,9 @@ TaskHandle_t isrTakeInputTaskHandle;
 
 QueueHandle_t app_buttonDetailsQueue;
 
+uint64_t getMilis(void);
 void app_process_button_input_Task(void*);
+void check_current_time_Task(void *);
 //void app_process_cmd_input_Task(void* pvParameters);
 
 #endif

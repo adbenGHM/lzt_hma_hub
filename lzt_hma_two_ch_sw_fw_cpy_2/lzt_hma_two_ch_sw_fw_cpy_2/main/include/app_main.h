@@ -111,7 +111,7 @@ void input_taskManager(void);
 void control_Ind_Led(uint32_t);
 
 uint8_t isOFFLINE;
-
+void sendMultiicast(app_nodeData_t);
 //TODO : notification for wifi not connected
 //TODO : disconnected from internet
 #endif

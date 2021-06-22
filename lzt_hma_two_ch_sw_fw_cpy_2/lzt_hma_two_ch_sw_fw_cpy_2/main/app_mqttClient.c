@@ -253,10 +253,10 @@ static void mqttPublish(void *arg)
         memset(nodeResponse.nodeId, '\0', sizeof(nodeResponse.nodeId));
         memset(nodeResponse.data, '\0', sizeof(nodeResponse.data));
         memset(mqttStr,'\0', sizeof(mqttStr));
-        if(isOFFLINE==0){
-            qStatus = xQueueReceive(app_nodeResponseQueue, &nodeResponse, portMAX_DELAY);
-            if (qStatus == pdPASS)
-            {
+        qStatus = xQueueReceive(app_nodeResponseQueue, &nodeResponse, portMAX_DELAY);
+        if (qStatus == pdPASS)
+        {
+            if(isOFFLINE==0){
                 sprintf((char*)mqttStr,"{\"NodeId\" : \"%s\", \"Data\" : %s, \"Type\" : %d}",macID,nodeResponse.data,nodeResponse.pck_type);
                 //printf("\r\n");
                 //printf((char*)mqttStr);
@@ -264,7 +264,11 @@ static void mqttPublish(void *arg)
                 printf("\r\nNode publishing [%s]to topic [%s]\r\n",mqttStr,publishTopic);
                 esp_mqtt_client_publish(client, publishTopic, (char*)mqttStr, 0, 1, 1);
             }
+            
+            else 
+                sendMultiicast(nodeResponse);
         }
+    
         vTaskDelay(500 / portTICK_PERIOD_MS);
     }
     vTaskDelete(NULL);
@@ -297,6 +301,6 @@ app_status_t app_mqttClientInit()
     strcat(subscribeScheduleTopic,"/schedule/#");
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
     esp_mqtt_client_start(client);
-    xTaskCreate(mqttPublish, "MQTTPUB", 3072, client, 4, NULL);
+    xTaskCreate(mqttPublish, "MQTTPUB", 4098, client, 4, NULL);
     return APP_STATUS_OK;
 }

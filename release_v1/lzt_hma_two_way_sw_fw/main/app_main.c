@@ -45,7 +45,7 @@ void app_InitIO(){
         //set as output mode
         .mode = GPIO_MODE_INPUT_OUTPUT,
         //bit mask of the pins that you want to set,e.g.GPIO18/19
-        .pin_bit_mask = (1ULL << LED_GRP_1) | (1ULL << LED_GRP_2) |  (1ULL << RELAY_OUT1) ,
+        .pin_bit_mask = (1ULL << RELAY1_ON_IND_LED) | (1ULL << RELAY1_OFF_IND_LED) |  (1ULL << RELAY_OUT1) ,
         //disable pull-down mode
         .pull_down_en = 0,
         //disable pull-up mode
@@ -53,8 +53,8 @@ void app_InitIO(){
     };
     gpio_config(&io_conf);
     //button 2
-    gpio_set_level(LED_GRP_2,1); //red
-    gpio_set_level(LED_GRP_1,0); //green
+    gpio_set_level(RELAY1_OFF_IND_LED,1); //red
+    gpio_set_level(RELAY1_ON_IND_LED,0); //green
 
    
 
@@ -70,8 +70,8 @@ void app_InitIO(){
 
 
 void control_Ind_Led(uint32_t state){
-    gpio_set_level(LED_GRP_1,state);
-    gpio_set_level(LED_GRP_2 ,state);
+    gpio_set_level(RELAY1_ON_IND_LED,state);
+    gpio_set_level(RELAY1_OFF_IND_LED ,state);
 }
 
 void app_main(void)

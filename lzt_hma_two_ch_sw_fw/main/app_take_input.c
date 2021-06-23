@@ -5,10 +5,6 @@
 #define DELAY                   1000  //in microseconds
 
 
-#define MINIMUM_BUTTON_PRESS_PERIOD     20     //in miliseconds
-#define MINIMUM_BUTTON_RELEASE_PERIOD   20     //in milliseconds
-#define MAXIMUM_RELESE_PERIOD_BETWEEN_CONSICUTIVE_PRESS 500
-
 #define NUM_OF_BUTTON_INPUTS    2
 
 static uint64_t millis = 0;
@@ -79,48 +75,43 @@ void isrTakeInputTask(void* pvParameters){
                 break;
                 case 1:
                     if(gpio_get_level(buttonElemetArray[buttonIndex].buttonGpioNum)==buttonElemetArray[buttonIndex].buttonPressedStateLogicLevel){
-                        if((getMilis()-buttonElemetArray[buttonIndex].eventMillis)>MINIMUM_BUTTON_PRESS_PERIOD)
-                            buttonElemetArray[buttonIndex].pressDetectionState=2; 
+                        uint64_t millisDiff=getMilis()-buttonElemetArray[buttonIndex].eventMillis;
+                        if(millisDiff>MINIMUM_BUTTON_PRESS_PERIOD){
+                            buttonElemetArray[buttonIndex].pressDetectionState=2;
+                            button_details.buttonGpioNum = buttonElemetArray[buttonIndex].buttonGpioNum;
+                            button_details.pressCount = 1;
+                            button_details.pressDurationMillis=millisDiff;
+                            xQueueSend(app_buttonDetailsQueue, &button_details, 10); 
+                        }
                     }
                     else{
-                        buttonElemetArray[buttonIndex].pressDetectionState=5;  
+                        buttonElemetArray[buttonIndex].pressDetectionState=4;  
                     }
                 break;
                 case 2:
                     if(gpio_get_level(buttonElemetArray[buttonIndex].buttonGpioNum)!=buttonElemetArray[buttonIndex].buttonPressedStateLogicLevel){
-                        buttonElemetArray[buttonIndex].eventMillis=getMilis();
-                        buttonElemetArray[buttonIndex].pressDetectionState=3;     
+                        buttonElemetArray[buttonIndex].pressDetectionState=4;     
+                    }
+                    else{
+                        uint64_t millisDiff=getMilis()-buttonElemetArray[buttonIndex].eventMillis;
+                        if(millisDiff>MINIMUM_PRESS_HOLD_PERIOD){
+                            buttonElemetArray[buttonIndex].pressDetectionState=3;
+                            button_details.buttonGpioNum = buttonElemetArray[buttonIndex].buttonGpioNum;
+                            button_details.pressCount = 1;
+                            button_details.pressDurationMillis=millisDiff;
+                            xQueueSend(app_buttonDetailsQueue, &button_details, 10); 
+                        }  
                     }
                 break;
                 case 3:
                     if(gpio_get_level(buttonElemetArray[buttonIndex].buttonGpioNum)!=buttonElemetArray[buttonIndex].buttonPressedStateLogicLevel){
-                        if((getMilis()-buttonElemetArray[buttonIndex].eventMillis)>MINIMUM_BUTTON_RELEASE_PERIOD){
-                            buttonElemetArray[buttonIndex].pressDetectionState=4;
-                            buttonElemetArray[buttonIndex].eventMillis=getMilis();
-                            buttonElemetArray[buttonIndex].pressCount=buttonElemetArray[buttonIndex].pressCount+1;
-                        }
-                    }
-                    else{
-                        buttonElemetArray[buttonIndex].pressDetectionState=5; 
+                        buttonElemetArray[buttonIndex].pressDetectionState=4;     
                     }
                 break;
                 case 4:
-                    if((getMilis()-buttonElemetArray[buttonIndex].eventMillis)>MAXIMUM_RELESE_PERIOD_BETWEEN_CONSICUTIVE_PRESS){                        
-                            buttonElemetArray[buttonIndex].pressDetectionState=5;  
-                    }
-                    else if(gpio_get_level(buttonElemetArray[buttonIndex].buttonGpioNum)==buttonElemetArray[buttonIndex].buttonPressedStateLogicLevel){
-                        buttonElemetArray[buttonIndex].pressDetectionState=0;    
-                    }
-                break;
-                case 5:
-                    if(buttonElemetArray[buttonIndex].pressCount>0){
-                        button_details.buttonGpioNum = buttonElemetArray[buttonIndex].buttonGpioNum;
-                        button_details.pressCount = buttonElemetArray[buttonIndex].pressCount;
-                        xQueueSend(app_buttonDetailsQueue, &button_details, 10);
-                    }
                     buttonElemetArray[buttonIndex].pressDetectionState=0; 
                     buttonElemetArray[buttonIndex].pressCount=0; 
-                    break;
+                break;
                 default:
                     buttonElemetArray[buttonIndex].pressDetectionState=0; 
                     buttonElemetArray[buttonIndex].pressCount=0; 

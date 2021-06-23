@@ -33,6 +33,10 @@
 #define APP_CONFIG_MQTT_BROKER_URL "mqtt://3.128.241.99"
 #define APP_CONFIG_MQTT_BROKER_PORT "1883"
 
+
+#define MINIMUM_BUTTON_PRESS_PERIOD     1     //in miliseconds
+#define MINIMUM_PRESS_HOLD_PERIOD       10000 //in miliseconds
+
 //==============================MUST BE SAME FOR BOTH NODE AND HUB==============================
 #define APP_CONFIG_NODE_DATA_MAX_LEN 200 //maximum size of node data in bytes
 
@@ -68,6 +72,7 @@ struct appConf
 typedef struct{
     gpio_num_t buttonGpioNum;
     uint8_t pressCount;
+    uint64_t pressDurationMillis;
 } button_details_t;
 
 /*

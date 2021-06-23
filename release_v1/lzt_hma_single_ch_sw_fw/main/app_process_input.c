@@ -12,14 +12,8 @@ void app_process_cmd_input_Task(void* pvParameters){
         if(ptr != NULL && colon != NULL){
             strncpy(&state, ptr + strlen("d1\":")+1,1);
             state -= 48;        //ASCII of 0: 48
-            if(state==1){
-                gpio_set_level(LED_GRP_1,1);
-                gpio_set_level(LED_GRP_2,1);
-            } 
-            else{     
-                gpio_set_level(LED_GRP_1,1);
-                gpio_set_level(LED_GRP_2,0);
-            }
+            gpio_set_level(RELAY1_OFF_IND_LED,(uint8_t)!state);      //Control red led
+            gpio_set_level(LED_GRP_1,(uint8_t)state);       //Control green led
             gpio_set_level(RELAY_OUT1,(uint8_t)state);      //Control RELAY 2
             sprintf(nodeResponse.data,"{\"d1\" : \"%d\"}",state);
         }
@@ -40,26 +34,32 @@ void app_process_button_input_Task(void* pvParameters){
                 case 1:
                     printf("Button [%d] pressed Once\r\n",button_details_receive.buttonGpioNum);
                     if(button_details_receive.buttonGpioNum==BUTTON_IN1){
-                        if(button_details_receive.pressDurationMillis<MINIMUM_PRESS_HOLD_PERIOD){
-                            if(gpio_get_level(RELAY_OUT1) == 1){  //if GREEN ON
-                                strcpy(nodeCmd.data, "{\"d1\":\"0\"}");
-                            }
-                            else{
-                                strcpy(nodeCmd.data, "{\"d1\":\"1\"}");
-                            }
-                            xQueueSend(app_nodeCommandQueue, &nodeCmd, 0);
+                        if(gpio_get_level(RELAY_OUT1) == 1){  //if GREEN ON
+                            strcpy(nodeCmd.data, "{\"d1\":\"0\"}");
                         }
                         else{
-                            appConfig.startMesh = false;
-                            gpio_set_level(LED_GRP_1,0);      
-                            gpio_set_level(LED_GRP_2,0); 
-                            app_saveConfig();
-                            vTaskDelay(1000/portTICK_PERIOD_MS);
-                            esp_restart();
+                            strcpy(nodeCmd.data, "{\"d1\":\"1\"}");
                         }
+                        xQueueSend(app_nodeCommandQueue, &nodeCmd, 0);
                     }
                     break;
-                default:
+                case 2:
+                    printf("Button [%d] pressed Twice\r\n",button_details_receive.buttonGpioNum);
+                    break;
+                case 3:
+                    printf("Button [%d] pressed Thrice\r\n",button_details_receive.buttonGpioNum);
+                    break;
+                case 4:
+                case 5:
+                case 6:
+                case 7:
+                    printf("Button [%d] pressed %d times\r\n",button_details_receive.buttonGpioNum,button_details_receive.pressCount);
+                     appConfig.startMesh = false;
+                    gpio_set_level(GPIO_NUM_4,0);      
+                    gpio_set_level(GPIO_NUM_5,0); 
+                    app_saveConfig();
+                    vTaskDelay(1000/portTICK_PERIOD_MS);
+                    esp_restart();
                     break;    
             }
         }

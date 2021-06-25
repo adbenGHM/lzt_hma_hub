@@ -2,7 +2,7 @@ idf_component_register(SRCS     "app_flash.c"
                                 "app_httpServer.c"
                                 "app_wifiSta.c"
                                 "app_wifiAp.c"
-                                "device_multicast.c"
+                                
                                 "device_sntp.c"
                                 "app_mqttClient.c" 
                                 "app_consolNodeCmd.c" 

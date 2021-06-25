@@ -11,10 +11,10 @@
 #define DELAY                   1000  //in microseconds
 
 
-#define MINIMUM_BUTTON_PRESS_PERIOD     20     //in miliseconds
-#define MINIMUM_BUTTON_RELEASE_PERIOD   20     //in milliseconds
-#define MAXIMUM_RELESE_PERIOD_BETWEEN_CONSICUTIVE_PRESS 500
-
+#define MINIMUM_BUTTON_PRESS_PERIOD     1    //in miliseconds
+//#define MINIMUM_BUTTON_RELEASE_PERIOD   20     //in milliseconds
+//#define MAXIMUM_RELESE_PERIOD_BETWEEN_CONSICUTIVE_PRESS 500
+#define MINIMUM_PRESS_HOLD_PERIOD 5000
 #define NUM_OF_BUTTON_INPUTS    2
 
 //==============================================================================================
@@ -40,6 +40,7 @@ typedef struct{
 typedef struct{
     gpio_num_t buttonGpioNum;
     uint8_t pressCount;
+    uint64_t pressDurationMillis;
 } button_details_t;
 
 

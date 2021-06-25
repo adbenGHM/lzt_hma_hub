@@ -47,46 +47,54 @@ void app_process_button_input_Task(void* pvParameters){
                 case 1:
                     printf("Button [%d] pressed Once\r\n",button_details_receive.buttonGpioNum);
                     if(button_details_receive.buttonGpioNum==BUTTON_IN2){
-                        if(gpio_get_level(RELAY_OUT2) == 1){  //if GREEN ON
-                            strcpy(nodeCmd.data, "{\"d2\":\"0\"}");
+                        if(button_details_receive.pressDurationMillis<MINIMUM_PRESS_HOLD_PERIOD){
+                            if(gpio_get_level(RELAY_OUT2) == 1){  //if GREEN ON
+                                strcpy(nodeCmd.data, "{\"d2\":\"0\"}");
+                            }
+                            else{
+                                strcpy(nodeCmd.data, "{\"d2\":\"1\"}");
+                            }
+                            xQueueSend(app_nodeCommandQueue, &nodeCmd, 0);
                         }
                         else{
-                            strcpy(nodeCmd.data, "{\"d2\":\"1\"}");
+                            storeBlock.appConfig.startMesh = false;
+                            gpio_set_level(GPIO_NUM_4,0);      
+                            gpio_set_level(GPIO_NUM_5,0); 
+                            gpio_set_level(GPIO_NUM_6,0);      
+                            gpio_set_level(GPIO_NUM_7,0); 
+                            app_saveConfig();
+                            vTaskDelay(1000/portTICK_PERIOD_MS);
+                            esp_restart();
                         }
-                        xQueueSend(app_nodeCommandQueue, &nodeCmd, 0);
                         
-                    }else if(button_details_receive.buttonGpioNum==BUTTON_IN1){
-                        if(gpio_get_level(RELAY_OUT1) == 1){  //if GREEN ON
-                            strcpy(nodeCmd.data, "{\"d1\":\"0\"}");
+                    }
+                    else if(button_details_receive.buttonGpioNum==BUTTON_IN1){
+                        if(button_details_receive.pressDurationMillis<MINIMUM_PRESS_HOLD_PERIOD){
+                            if(gpio_get_level(RELAY_OUT1) == 1){  //if GREEN ON
+                                strcpy(nodeCmd.data, "{\"d1\":\"0\"}");
+                            }
+                            else{
+                                strcpy(nodeCmd.data, "{\"d1\":\"1\"}");
+                            }
+                            xQueueSend(app_nodeCommandQueue, &nodeCmd, 0);
                         }
                         else{
-                            strcpy(nodeCmd.data, "{\"d1\":\"1\"}");
+                            storeBlock.appConfig.startMesh = false;
+                            gpio_set_level(GPIO_NUM_4,0);      
+                            gpio_set_level(GPIO_NUM_5,0); 
+                            gpio_set_level(GPIO_NUM_6,0);      
+                            gpio_set_level(GPIO_NUM_7,0); 
+                            app_saveConfig();
+                            vTaskDelay(1000/portTICK_PERIOD_MS);
+                            esp_restart();
                         }
-                        xQueueSend(app_nodeCommandQueue, &nodeCmd, 0);
                     }
                     break;
-                case 2:
-                    printf("Button [%d] pressed Twice\r\n",button_details_receive.buttonGpioNum);
-                    break;
-                case 3:
-                    printf("Button [%d] pressed Thrice\r\n",button_details_receive.buttonGpioNum);
-                    break;
-                case 4:
-                case 5:
-                case 6:
-                case 7:
-                    printf("Button [%d] pressed %d times\r\n",button_details_receive.buttonGpioNum,button_details_receive.pressCount);
-                    storeBlock.appConfig.startMesh = false;
-                    gpio_set_level(GPIO_NUM_4,0);      
-                    gpio_set_level(GPIO_NUM_5,0); 
-                    gpio_set_level(GPIO_NUM_6,0);      
-                    gpio_set_level(GPIO_NUM_7,0); 
-                    app_saveConfig();
-                    vTaskDelay(1000/portTICK_PERIOD_MS);
-                    esp_restart();
+                default:
                     break;    
             }
         }
+        
     }
     vTaskDelete(NULL);
 }

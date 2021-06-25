@@ -52,7 +52,7 @@ typedef struct appConf
 
 typedef struct statusConf
 {
-    char nodeID[5+1][25];
+    char nodeID[25];
     uint8_t state[5+1];
 } statusConf;
 
@@ -111,7 +111,7 @@ void input_taskManager(void);
 void control_Ind_Led(uint32_t);
 
 uint8_t isOFFLINE;
-void sendMultiicast(app_nodeData_t);
+//void sendMultiicast(app_nodeData_t);
 //TODO : notification for wifi not connected
 //TODO : disconnected from internet
 #endif

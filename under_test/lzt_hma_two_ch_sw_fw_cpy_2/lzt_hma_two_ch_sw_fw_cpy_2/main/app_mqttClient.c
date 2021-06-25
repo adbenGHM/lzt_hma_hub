@@ -211,7 +211,7 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
         flag = 1;
-        xQueueSend(device_offlineIndQueue,&flag, 0);
+        //xQueueSend(device_offlineIndQueue,&flag, 0);
         printf("\nOFFLINE MODE ACTIVATED!!\n");
         break;
     case MQTT_EVENT_SUBSCRIBED:
@@ -265,8 +265,8 @@ static void mqttPublish(void *arg)
                 esp_mqtt_client_publish(client, publishTopic, (char*)mqttStr, 0, 1, 1);
             }
             
-            else 
-                sendMultiicast(nodeResponse);
+            //else 
+                //sendMultiicast(nodeResponse);
         }
     
         vTaskDelay(500 / portTICK_PERIOD_MS);

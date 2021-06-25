@@ -91,7 +91,7 @@ void app_main(void)
         app_nodeResponseQueue = xQueueCreate(APP_CONFIG_NODE_RESPONSE_QUEUE_SIZE, sizeof(app_nodeData_t));
         
         input_taskManager();
-        device_multicastInit();
+        //device_multicastInit();
         app_mqttClientInit();
         app_userInputInit();
         device_syncTime();

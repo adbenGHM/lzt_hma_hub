@@ -60,8 +60,6 @@ void app_main(void)
     /* event initialization */
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    isOFFLINE = 1;
-
     app_loadConfig();
     //storeBlock.appConfig.startMesh = false;
     if(storeBlock.appConfig.startMesh == false){
@@ -94,6 +92,7 @@ void app_main(void)
         //device_multicastInit();
         app_mqttClientInit();
         app_userInputInit();
+        xTaskCreate(check_current_time_Task,"check_current_time_Task",4000,NULL,configMAX_PRIORITIES - 1,NULL);
         device_syncTime();
     }
     ESP_LOGI(TAG,"Initialization Done\r\n");

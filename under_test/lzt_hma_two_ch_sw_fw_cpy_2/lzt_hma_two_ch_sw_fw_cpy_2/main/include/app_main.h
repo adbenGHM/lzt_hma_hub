@@ -68,8 +68,8 @@ typedef struct{
 } timeDiv_t;
 
 typedef struct {
-    char* action;         //Specifies Mode (create/Modify/delete)
-    char* channelKey;     //Target Device
+    char action[20];         //Specifies Mode (create/Modify/delete)
+    char channelKey[10];     //Target Device
     timeDiv_t startTime;  //Schedule Start Time
     timeDiv_t endTime;    //Schedule End Time
     char days[7][3];      //Days of Week (sun-mon-tue-wed-thu-fri-sat)
@@ -88,9 +88,9 @@ scheduleDetails_t device[MAX_NUM_ID];
 
 QueueHandle_t app_nodeCommandQueue; 
 QueueHandle_t app_nodeResponseQueue;
-QueueHandle_t device_offlineIndQueue;
+//QueueHandle_t device_offlineIndQueue;
 
-
+void check_current_time_Task(void *);
 app_status_t app_consolInit(void);
 app_status_t app_consolRegisterNodeCmd(void);
 app_status_t app_mqttClientInit();
@@ -110,7 +110,7 @@ void app_InitIO(void);
 void input_taskManager(void);
 void control_Ind_Led(uint32_t);
 
-uint8_t isOFFLINE;
+//uint8_t isOFFLINE;
 //void sendMultiicast(app_nodeData_t);
 //TODO : notification for wifi not connected
 //TODO : disconnected from internet

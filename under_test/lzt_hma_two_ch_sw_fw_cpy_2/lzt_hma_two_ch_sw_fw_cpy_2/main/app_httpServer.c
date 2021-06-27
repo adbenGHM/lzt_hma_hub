@@ -98,12 +98,18 @@ static esp_err_t httpServer_optionsHandler(httpd_req_t *req)
     httpd_resp_send(req, NULL, 0);    
     return ESP_OK;
 }
-static const httpd_uri_t httpServer_optionsUri = {
+static const httpd_uri_t httpServer_putOptionsUri = {
     .uri = "/device_demo/set_config/",
     .method = HTTP_OPTIONS,
     .handler = httpServer_optionsHandler,
     .user_ctx = NULL
 };
+// static const httpd_uri_t httpServer_getOptionsUri = {
+//     .uri = "/device_demo/device_info/",
+//     .method = HTTP_OPTIONS,
+//     .handler = httpServer_optionsHandler,
+//     .user_ctx = NULL
+// };
 httpd_handle_t start_webserver(void)
 {
     httpd_handle_t server = NULL;
@@ -118,7 +124,8 @@ httpd_handle_t start_webserver(void)
         ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server, &httpServer_credentialPostUri);
         httpd_register_uri_handler(server, &httpServer_infoGettUri);
-        httpd_register_uri_handler(server, &httpServer_optionsUri);
+        httpd_register_uri_handler(server, &httpServer_putOptionsUri);
+        //httpd_register_uri_handler(server, &httpServer_getOptionsUri);
         return server;
     }
 

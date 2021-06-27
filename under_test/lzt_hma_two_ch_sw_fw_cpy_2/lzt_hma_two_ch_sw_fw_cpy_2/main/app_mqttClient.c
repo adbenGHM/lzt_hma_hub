@@ -6,9 +6,9 @@
 static const char *TAG = "MQTT_CLIENT";
 //{"NodeId" : "24:0a:c4:af:4c:fc", "data" : {"sw1": "1", "sw2" :"1"}}
 static char macID[18];
-static char publishTopic[25];
-static char subscribeTopic[25];
-static char subscribeScheduleTopic[25];
+static char publishTopic[100];
+static char subscribeTopic[100];
+static char subscribeScheduleTopic[100];
 static char *strnchr(char *s, unsigned char c, size_t len)
 {
     while (len && *s != c)
@@ -75,15 +75,19 @@ void setDays(uint8_t id, char* value){
     
 }
 void processScheduleMqttData(char *dataStr, uint16_t dataLen){
-    cJSON* request_json = cJSON_Parse(dataStr);
-    cJSON* item = cJSON_GetObjectItem(request_json,"schedules");
+    //cJSON* request_json = cJSON_Parse(dataStr);
+    cJSON* item = cJSON_Parse(dataStr);//cJSON_GetObjectItem(request_json,"schedules");
     uint8_t id=0;
     char* value;
-    id = (uint8_t)atoi((cJSON_GetObjectItem(item, "id")->valuestring));
+    //printf("json id type %d\r\n",cJSON_GetObjectItem(item, "id")->type);
+    //id=7;
+    id = (cJSON_GetObjectItem(item, "id")->valueint);
     value = cJSON_GetObjectItem(item, "action")->valuestring;
-    device[id].action = value;
+    memset(device[id].action,'\0',sizeof(device[id].action));
+    strcpy(device[id].action, value);
     value = cJSON_GetObjectItem(item, "channelKey")->valuestring;
-    device[id].channelKey = value;
+    memset(device[id].channelKey,'\0',sizeof(device[id].channelKey));
+    strcpy(device[id].channelKey, value);
     value = cJSON_GetObjectItem(item, "startTime")->valuestring;
     setTime(id,value,'s');
     value = cJSON_GetObjectItem(item, "endtime")->valuestring;
@@ -98,8 +102,8 @@ void processScheduleMqttData(char *dataStr, uint16_t dataLen){
     for (int i = 0; i < 7; ++i)
         if(device[id].days[i][0] != '\0')
             printf("Day: %s\n",device[id].days[i]);
-    cJSON_Delete(request_json);
-    xTaskCreate(check_current_time_Task,"check_current_time_Task",4000,NULL,configMAX_PRIORITIES - 1,NULL);
+            
+    cJSON_Delete(item);
 }
 void processContolMqttData(char *dataStr, uint16_t dataLen)
 {
@@ -177,7 +181,10 @@ void processContolMqttData(char *dataStr, uint16_t dataLen)
     storeBlock.statusConfig.state[4] = 0;
     storeBlock.statusConfig.state[5] = 0;
     app_loadConfig();
+    printf("\n%d\t%d", 1, storeBlock.statusConfig.state[1]);
     printf("\n%d\t%d", 2, storeBlock.statusConfig.state[2]);
+    printf("\n%d\t%d", 3, storeBlock.statusConfig.state[3]);
+    printf("\n%d\t%d", 4, storeBlock.statusConfig.state[4]);
     printf("\n%d\t%d", 5, storeBlock.statusConfig.state[5]);
     // app_loadConfig();
     // printf("%s",appConfig.wifiSsid);
@@ -190,13 +197,9 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
     esp_mqtt_client_handle_t client = event->client;
     int msg_id;
     app_nodeData_t nodeResponse;
-    // your_context_t *context = event->context;
-    uint8_t flag;
     switch (event->event_id)
     {
     case MQTT_EVENT_CONNECTED:
-        flag = 0;
-        xQueueSend(device_offlineIndQueue,&flag, 0);
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
         msg_id = esp_mqtt_client_subscribe(client, subscribeTopic, 0);
         printf("\r\nNode Subscribed to topic [%s]\r\n",subscribeTopic);
@@ -210,8 +213,6 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
-        flag = 1;
-        //xQueueSend(device_offlineIndQueue,&flag, 0);
         printf("\nOFFLINE MODE ACTIVATED!!\n");
         break;
     case MQTT_EVENT_SUBSCRIBED:
@@ -256,17 +257,9 @@ static void mqttPublish(void *arg)
         qStatus = xQueueReceive(app_nodeResponseQueue, &nodeResponse, portMAX_DELAY);
         if (qStatus == pdPASS)
         {
-            if(isOFFLINE==0){
-                sprintf((char*)mqttStr,"{\"NodeId\" : \"%s\", \"Data\" : %s, \"Type\" : %d}",macID,nodeResponse.data,nodeResponse.pck_type);
-                //printf("\r\n");
-                //printf((char*)mqttStr);
-                //printf("\r\n");
-                printf("\r\nNode publishing [%s]to topic [%s]\r\n",mqttStr,publishTopic);
-                esp_mqtt_client_publish(client, publishTopic, (char*)mqttStr, 0, 1, 1);
-            }
-            
-            //else 
-                //sendMultiicast(nodeResponse);
+            sprintf((char*)mqttStr,"{\"NodeId\" : \"%s\", \"Data\" : %s, \"Type\" : %d}",macID,nodeResponse.data,nodeResponse.pck_type);
+            printf("\r\nNode publishing [%s]to topic [%s]\r\n",mqttStr,publishTopic);
+            esp_mqtt_client_publish(client, publishTopic, (char*)mqttStr, 0, 1, 1);
         }
     
         vTaskDelay(500 / portTICK_PERIOD_MS);
@@ -294,11 +287,16 @@ app_status_t app_mqttClientInit()
     memcpy(subscribeTopic,macID,sizeof(macID));
     memcpy(subscribeScheduleTopic,macID,sizeof(macID));
     ESP_LOGI(TAG, "sent subscribe successful, MAC STA ID: %s", macID);
+    
     strcat(publishTopic,"/monitor");
-    // printf("PUBLISH to TOPIC: %s\r\n", publishTopic);
+    printf("Mqtt [Monitor] publish topic : %s\r\n", publishTopic);
+    
     strcat(subscribeTopic,"/control");
-    // printf("PUBLISH to TOPIC: %s\r\n", subscribeTopic);
+    printf("Mqtt [Control] subscribe topic : %s\r\n", subscribeTopic);
+    
     strcat(subscribeScheduleTopic,"/schedule/#");
+    printf("Mqtt [Schedule] subscribe topic : %s\r\n", subscribeTopic);
+    
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
     esp_mqtt_client_start(client);
     xTaskCreate(mqttPublish, "MQTTPUB", 4098, client, 4, NULL);

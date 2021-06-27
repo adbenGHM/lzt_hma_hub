@@ -1,6 +1,5 @@
 #include "esp_sntp.h"
 #include "app_main.h"
-#include "app_input.h"
 
 #define APP_CONFIG_TIMEZONE "UTC-05:30"
 #define DURATION_BETWEEN_CHECK 1000  //in ms
@@ -11,24 +10,36 @@ void check_current_time_Task(void* pvParameters){
     time_t now;
     struct tm timeinfo;
     while(1){
-        if(getMilis() % DURATION_BETWEEN_CHECK ==0){
-            time(&now);
-            localtime_r(&now, &timeinfo);
-            for (int i = 0; i < MAX_NUM_ID; ++i){
-                for (int j = 0; j < 7; ++j){
-                    if(strcmp(device[i].action,"delete") != 0){
-                        if (strcmp(device[i].days[j],dayNames[timeinfo.tm_wday])==0)
-                        {
-                            if(device[i].startTime.hr == timeinfo.tm_hour && device[i].startTime.min == timeinfo.tm_min && device[i].startTime.sec == timeinfo.tm_sec ){
-                                printf("%d\t%d\n",i,j);
-                                vTaskDelay(20 / portTICK_PERIOD_MS);
-                            }
+        time(&now);
+        localtime_r(&now, &timeinfo);
+        for (int i = 0; i < MAX_NUM_ID; ++i){
+            for (int j = 0; j < 7; ++j){
+                if(strcmp(device[i].action,"delete") != 0){
+                    if (strcmp(device[i].days[j],dayNames[timeinfo.tm_wday])==0)
+                    {
+                        printf("\r\nday id %d , %d , %d\r\n", j,i,timeinfo.tm_wday);
+                        if(device[i].startTime.hr == timeinfo.tm_hour && device[i].startTime.min == timeinfo.tm_min && device[i].startTime.sec == timeinfo.tm_sec){
+                            printf("\r\ntime sec : %d , %d \r\n",timeinfo.tm_sec,device[i].startTime.sec);
+                            printf("\r\nSchedule on : %s\r\n",device[i].channelKey);
+                            app_nodeData_t nodeCmd;
+                            memset(nodeCmd.data,'\0',sizeof(nodeCmd.data));
+                            sprintf(nodeCmd.data, "{\"%s\":\"1\"}",device[i].channelKey);
+                            xQueueSend(app_nodeCommandQueue, &nodeCmd, 0);
+                            vTaskDelay(100 / portTICK_PERIOD_MS);
+                        }
+                        if(device[i].endTime.hr == timeinfo.tm_hour && device[i].endTime.min == timeinfo.tm_min && device[i].endTime.sec == timeinfo.tm_sec){
+                            printf("\r\nSchedule off : %s\r\n",device[i].channelKey);
+                            app_nodeData_t nodeCmd;
+                            memset(nodeCmd.data,'\0',sizeof(nodeCmd.data));
+                            sprintf(nodeCmd.data, "{\"%s\":\"0\"}",device[i].channelKey);
+                            xQueueSend(app_nodeCommandQueue, &nodeCmd, 0);
+                            vTaskDelay(100 / portTICK_PERIOD_MS);
                         }
                     }
                 }
             }
         }
-        vTaskDelay(20 / portTICK_PERIOD_MS);
+        vTaskDelay(950 / portTICK_PERIOD_MS);
         
     }
     vTaskDelete(NULL);

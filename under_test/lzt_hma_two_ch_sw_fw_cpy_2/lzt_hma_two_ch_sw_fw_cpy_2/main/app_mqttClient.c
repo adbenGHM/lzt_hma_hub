@@ -174,18 +174,8 @@ void processContolMqttData(char *dataStr, uint16_t dataLen)
     }
     strncpy(nodeCmd.data, p_tempPos, p_pos - p_tempPos);
     ESP_LOGI(TAG, "NodeId : %s , Data : %s\r\n", nodeCmd.nodeId, nodeCmd.data);
-    app_saveStatus(nodeCmd);
-    storeBlock.statusConfig.state[1] = 0;
-    storeBlock.statusConfig.state[2] = 0;
-    storeBlock.statusConfig.state[3] = 0;
-    storeBlock.statusConfig.state[4] = 0;
-    storeBlock.statusConfig.state[5] = 0;
-    app_loadConfig();
-    printf("\n%d\t%d", 1, storeBlock.statusConfig.state[1]);
-    printf("\n%d\t%d", 2, storeBlock.statusConfig.state[2]);
-    printf("\n%d\t%d", 3, storeBlock.statusConfig.state[3]);
-    printf("\n%d\t%d", 4, storeBlock.statusConfig.state[4]);
-    printf("\n%d\t%d", 5, storeBlock.statusConfig.state[5]);
+    
+    
     // app_loadConfig();
     // printf("%s",appConfig.wifiSsid);
     //saveState(nodeCmd);

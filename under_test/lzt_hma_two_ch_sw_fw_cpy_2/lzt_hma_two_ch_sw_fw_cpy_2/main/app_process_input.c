@@ -15,7 +15,9 @@ void app_process_cmd_input_Task(void* pvParameters){
             state -= 48;        //ASCII of 0: 48
             gpio_set_level(RELAY2_OFF_IND_LED,(uint8_t)!state);      //Control red led
             gpio_set_level(RELAY2_ON_IND_LED,(uint8_t)state);       //Control green led
-            gpio_set_level(RELAY_OUT2,(uint8_t)state);      //Control RELAY 2
+            gpio_set_level(RELAY_OUT2,(uint8_t)state);      //Control RELAY 
+            storeBlock.statusConfig.state[2]=state;
+            app_saveConfig();
             sprintf(nodeResponse.data,"{\"d1\" : \"%d\",\"d2\" : \"%d\"}",gpio_get_level(RELAY_OUT1),state);
         }
         else{
@@ -27,6 +29,8 @@ void app_process_cmd_input_Task(void* pvParameters){
                 gpio_set_level(RELAY1_OFF_IND_LED,(uint8_t)!state);    //Control red led
                 gpio_set_level(RELAY1_ON_IND_LED,(uint8_t)state);     //Control green led 
                 gpio_set_level(RELAY_OUT1,(uint8_t)state);    //Control RELAY 1
+                storeBlock.statusConfig.state[1]=state;
+                app_saveConfig();
                 sprintf(nodeResponse.data,"{\"d1\" : \"%d\",\"d2\" : \"%d\"}",state,gpio_get_level(RELAY_OUT2));
             }
         }

@@ -59,9 +59,18 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_netif_init());
     /* event initialization */
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-
+    app_nodeCommandQueue = xQueueCreate(APP_CONFIG_NODE_CMD_QUEUE_SIZE, sizeof(app_nodeData_t));
+    app_nodeResponseQueue = xQueueCreate(APP_CONFIG_NODE_RESPONSE_QUEUE_SIZE, sizeof(app_nodeData_t));
+    input_taskManager();
     app_loadConfig();
     //storeBlock.appConfig.startMesh = false;
+    app_nodeData_t nodeCmd;
+    for(int i=1;i<sizeof(storeBlock.statusConfig.state);i++){
+        memset(nodeCmd.data,'\0',sizeof(nodeCmd.data));
+        sprintf(nodeCmd.data, "{\"d%d\":\"%d\"}",i,storeBlock.statusConfig.state[i]);
+        printf("\r\nfrom flash %s\r\n",nodeCmd.data);
+        xQueueSend(app_nodeCommandQueue,&nodeCmd,0);
+    }
     if(storeBlock.appConfig.startMesh == false){
         ESP_LOGI(TAG, "ESP_WIFI_MODE_AP");
         configMode=1;
@@ -85,10 +94,8 @@ void app_main(void)
             printf("\r\nPlease configure the device\r\n");
         }
         
-        app_nodeCommandQueue = xQueueCreate(APP_CONFIG_NODE_CMD_QUEUE_SIZE, sizeof(app_nodeData_t));
-        app_nodeResponseQueue = xQueueCreate(APP_CONFIG_NODE_RESPONSE_QUEUE_SIZE, sizeof(app_nodeData_t));
         
-        input_taskManager();
+        
         //device_multicastInit();
         app_mqttClientInit();
         app_userInputInit();

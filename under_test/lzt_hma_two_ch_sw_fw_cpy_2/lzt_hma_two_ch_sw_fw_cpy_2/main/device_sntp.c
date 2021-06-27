@@ -17,7 +17,6 @@ void check_current_time_Task(void* pvParameters){
                 if(strcmp(device[i].action,"delete") != 0){
                     if (strcmp(device[i].days[j],dayNames[timeinfo.tm_wday])==0)
                     {
-                        printf("\r\nday id %d , %d , %d\r\n", j,i,timeinfo.tm_wday);
                         if(device[i].startTime.hr == timeinfo.tm_hour && device[i].startTime.min == timeinfo.tm_min && device[i].startTime.sec == timeinfo.tm_sec){
                             printf("\r\ntime sec : %d , %d \r\n",timeinfo.tm_sec,device[i].startTime.sec);
                             printf("\r\nSchedule on : %s\r\n",device[i].channelKey);

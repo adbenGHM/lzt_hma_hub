@@ -89,22 +89,24 @@ app_status_t app_loadConfig()
         return returnStatus;
 }
 
-app_status_t app_saveStatus(app_nodeData_t nodeCmd){
-    char temp[3];
-    uint8_t device, state;
-    strcpy(storeBlock.statusConfig.nodeID, nodeCmd.nodeId);
-    char *status = nodeCmd.data;
-    char *ptr = strstr(status, "d");
-    char *ptrEnd = strstr(ptr, "\"");
-    memset(temp, '\0', sizeof(temp));
-    strncpy(temp, ptr + 1, (ptrEnd - ptr - 1));
-    device=atoi(temp);
-    ptr = strstr((ptrEnd+1), "\"");
-    ptrEnd = strstr(ptr+1, "\"");
-    memset(temp, '\0', sizeof(temp));
-    strncpy(temp, ptr + 1, (ptrEnd - ptr - 1));
-    state=atoi(temp);
-    storeBlock.statusConfig.state[device] = state;
+// app_status_t app_saveStatus(app_nodeData_t nodeCmd){
+//     printf("\r\nSave config : %s\r\n",nodeCmd.data);
+//     cJSON* item = cJSON_Parse(nodeCmd.data);
+//     // char temp[3];
+//     // uint8_t device, state;
+//     // strcpy(storeBlock.statusConfig.nodeID, nodeCmd.nodeId);
+//     // char *status = nodeCmd.data;
+//     // char *ptr = strstr(status, "d");
+//     // char *ptrEnd = strstr(ptr, "\"");
+//     // memset(temp, '\0', sizeof(temp));
+//     // strncpy(temp, ptr + 1, (ptrEnd - ptr - 1));
+//     // device=atoi(temp);
+//     // ptr = strstr((ptrEnd+1), "\"");
+//     // ptrEnd = strstr(ptr+1, "\"");
+//     // memset(temp, '\0', sizeof(temp));
+//     // strncpy(temp, ptr + 1, (ptrEnd - ptr - 1));
+//     // state=atoi(temp);
+//     // storeBlock.statusConfig.state[device] = state;
 
-    return app_saveConfig();
-}
+//     return app_saveConfig();
+// }

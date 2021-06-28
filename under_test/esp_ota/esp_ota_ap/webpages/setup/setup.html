@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>TUSK</title>
+	</head>
+	<body>
+		<div>
+			<form action="/setup" enctype='multipart/form-data' method="POST">
+				<label for="task">UPLOAD A .bin FILE</label></br>
+				<input id="binFile"  type="file" name="file" accept='.bin' required/>
+				<!-- <input id="fileSize"  type="text" name="fileSize" style="display: none;"/>
+				<input id="fileContent"  type="text" name="fileContent" style="display: none;"/> -->
+				<button type="submit" >Generate</button>
+			</form>
+			
+		</div> 
+	</body>
+	<script>
+		//console.log(fileInputElement.value);
+	   function readSingleFile(e) {
+		   var file = e.target.files[0];
+		   if (!file) {
+			   return;
+		   }
+		   var reader = new FileReader();
+		   reader.onload = function(e) {
+			   var contents = e.target.result;
+			   document.getElementById('fileSize').value=file.size;
+			   document.getElementById('fileContent').value=contents;
+			   console.log(document.getElementById('fileSize').value);
+		   };
+		   reader.readAsText(file);
+	   }
+
+	//    document.getElementById('binFile')
+	//    .addEventListener('change', readSingleFile, false);
+	</script>
+</html>

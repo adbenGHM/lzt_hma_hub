@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>OTA FIRMWARE UPDATOR</title>
+	</head>
+	<body>
+		<div>
+			<form action="/update" enctype='multipart/form-data' method="POST">
+				<label for="task">UPLOAD A .bin FILE</label></br>
+				<input id="binFile"  type="file" name="file" accept='.bin' required/>
+				<button type="submit" >Generate</button>
+			</form>
+			
+		</div> 
+	</body>
+</html>

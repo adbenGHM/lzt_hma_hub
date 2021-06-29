@@ -12,33 +12,7 @@
 #include "esp_event.h"
 #include "driver/timer.h"
 static const char *TAG = "app_main";
-
-// void app_main(void)
-// {
-//     ESP_ERROR_CHECK(nvs_flash_init());
-//     /* tcpip initialization */
-//     ESP_ERROR_CHECK(esp_netif_init());
-//     /* event initialization */
-//     ESP_ERROR_CHECK(esp_event_loop_create_default());
-
-//     app_nodeCommandQueue = xQueueCreate(APP_CONFIG_NODE_CMD_QUEUE_SIZE, sizeof(app_nodeData_t));
-//     app_nodeResponseQueue = xQueueCreate(APP_CONFIG_NODE_RESPONSE_QUEUE_SIZE, sizeof(app_nodeData_t));
-//     app_meshHubInit();
-//     app_consolRegisterNodeCmd();
-//     app_consolInit();    
-//     app_mqttClientInit();
-//     ESP_LOGI(TAG,"Initialization Done\r\n");
-//     app_nodeData_t nodeResponse;
-//     uint8_t state=0;
-//     vTaskDelay(10000 / portTICK_PERIOD_MS);
-//     while(1){
-//         sprintf(nodeResponse.data,"{\"d1\" : \"%d\"}",state);
-//         xQueueSend(app_nodeResponseQueue, &nodeResponse, 0);   
-//         state=!state;
-//         vTaskDelay(10000 / portTICK_PERIOD_MS); 
-//     }
-// }
-
+char fw_version[]="version_1.1";
 
 
 
@@ -47,6 +21,9 @@ void app_main(void)
     uint8_t configMode=0;
     uint8_t ledState=0;
     app_InitIO();
+    printf("\r\n*********************************************************************\r\n");
+    printf("\r*  Version [%s]\r\n",fw_version);
+    printf("\r\n*********************************************************************\r\n");
     esp_err_t ret = nvs_flash_init();
     app_status_t resp;   
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -63,9 +40,7 @@ void app_main(void)
     app_nodeResponseQueue = xQueueCreate(APP_CONFIG_NODE_RESPONSE_QUEUE_SIZE, sizeof(app_nodeData_t));
     input_taskManager();
     app_loadConfig();
-    printf("\r\nThis is after OTA!!\r\n");
-    printf("\r\nThis is after OTA!!\r\n");
-    printf("\r\nThis is after OTA!!\r\n");
+    //storeBlock.appConfig.startMesh = false;
     app_nodeData_t nodeCmd;
     for(int i=1;i<sizeof(storeBlock.statusConfig.state);i++){
         memset(nodeCmd.data,'\0',sizeof(nodeCmd.data));
@@ -73,14 +48,13 @@ void app_main(void)
         printf("\r\nfrom flash %s\r\n",nodeCmd.data);
         xQueueSend(app_nodeCommandQueue,&nodeCmd,0);
     }
-    storeBlock.appConfig.startMesh = false;
     if(storeBlock.appConfig.startMesh == false){
         ESP_LOGI(TAG, "ESP_WIFI_MODE_AP");
         configMode=1;
         storeBlock.appConfig.startMesh = true;
         app_saveConfig();
         app_wifiApInit();
-        ota_example_init();
+        ota_init();
     }
     else{
         if(strlen((char*)storeBlock.appConfig.wifiSsid)>0 && strlen((char*)storeBlock.appConfig.wifiPassword)>0){

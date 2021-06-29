@@ -4,10 +4,10 @@
 #include "app_wifi.h"
 #include "app_main.h"
 
-// #define APP_CONFIG_AP_WIFI_SSID         "lazot"
-// #define APP_CONFIG_AP_WIFI_PASS         "12345678"
-#define APP_CONFIG_AP_WIFI_SSID         "esp32_ap"
-#define APP_CONFIG_AP_WIFI_PASS         "esp@connect"
+#define APP_CONFIG_AP_WIFI_SSID         "lazot"
+#define APP_CONFIG_AP_WIFI_PASS         "12345678"
+//#define APP_CONFIG_AP_WIFI_SSID         "esp32_ap"
+//#define APP_CONFIG_AP_WIFI_PASS         "esp@connect"
 #define APP_CONFIG_AP_WIFI_CHANNEL      1
 #define APP_CONFIG_AP_WIFI_MAX_STA_CONN 5
 

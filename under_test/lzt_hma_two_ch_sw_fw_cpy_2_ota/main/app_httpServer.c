@@ -3,13 +3,14 @@
 #include <esp_http_server.h>
 #include "esp_ota_ops.h"
 #include "esp_https_ota.h"
-//#include "esp_efuse.h"
 
 //#define ESP_MESH_HUB_ID "24:1a:c4:af:4c:fc"
 
 #define MIN(a, b) a > b ? b : a
 
 static const char *TAG = "http server";
+
+//------------------------------------------------------------------------------------
 #define BUFFSIZE_OTA 10240
 /*an ota data write buffer ready to write to the flash*/
 static char ota_write_data[BUFFSIZE_OTA+1] = { 0 };
@@ -26,7 +27,7 @@ static void __attribute__((noreturn)) task_fatal_error()
         ;
     }
 }
-void ota_example_init()
+void ota_init()
 {
     /* update handle : set by esp_ota_begin(), must be freed via esp_ota_end() */
 
@@ -63,7 +64,7 @@ void ota_end_task(){
     vTaskDelay(1000/portTICK_PERIOD_MS);
     esp_restart();
 }
-static esp_err_t httpServer_setupHtmlGetHandler(httpd_req_t *req)
+static esp_err_t httpServer_otaUpdateHtmlGetHandler(httpd_req_t *req)
 {
     ESP_LOGI(TAG, "GET SETUP HTML REQUEST");
     extern const unsigned char setup_html_start[] asm("_binary_setup_html_start");
@@ -76,14 +77,14 @@ static esp_err_t httpServer_setupHtmlGetHandler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static const httpd_uri_t httpServer_setupHtmlGetUri = {
+static const httpd_uri_t httpServer_otaUpdateGetUri = {
     .uri = "/update",
     .method = HTTP_GET,
-    .handler = httpServer_setupHtmlGetHandler,
+    .handler = httpServer_otaUpdateHtmlGetHandler,
     .user_ctx = NULL
 };
 
-static esp_err_t httpServer_setupPostHandler(httpd_req_t *req)
+static esp_err_t httpServer_otaUpdatePostHandler(httpd_req_t *req)
 {
     uint64_t availableConetctSize = req->content_len;
     int data_read;
@@ -140,12 +141,27 @@ static esp_err_t httpServer_setupPostHandler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static const httpd_uri_t httpServer_setupPostUri = {
+static const httpd_uri_t httpServer_otaUpdatePostUri = {
     .uri = "/update",
     .method = HTTP_POST,
-    .handler = httpServer_setupPostHandler,
+    .handler = httpServer_otaUpdatePostHandler,
     .user_ctx = NULL
 };
+esp_err_t httpServer_errorHandler(httpd_req_t *req, httpd_err_code_t err)
+{
+    printf("\r\nHttp Error : %d\r\n", err);
+    extern const unsigned char setup_html_start[] asm("_binary_setup_html_start");
+    extern const unsigned char setup_html_end[] asm("_binary_setup_html_end");
+    const size_t setup_html_size = (setup_html_end - setup_html_start);
+    httpd_resp_set_status(req, "301 Moved Permanently");
+    httpd_resp_set_hdr(req, "Location", "http://192.168.4.1/update");
+    httpd_resp_send_chunk(req, (const char *)setup_html_start, setup_html_size);
+
+    //terminate html header
+    httpd_resp_sendstr_chunk(req, NULL);
+    return ESP_OK;
+}
+//------------------------------------------------------------------------------------
 
 static esp_err_t httpServer_infoGettUriHandler(httpd_req_t *req){
     ESP_LOGI(TAG, "GET DEVICE JSON REQUEST");
@@ -243,20 +259,12 @@ static const httpd_uri_t httpServer_putOptionsUri = {
     .handler = httpServer_optionsHandler,
     .user_ctx = NULL
 };
-esp_err_t httpServer_errorHandler(httpd_req_t *req, httpd_err_code_t err)
-{
-    printf("\r\nHttp Error : %d\r\n", err);
-    extern const unsigned char setup_html_start[] asm("_binary_setup_html_start");
-    extern const unsigned char setup_html_end[] asm("_binary_setup_html_end");
-    const size_t setup_html_size = (setup_html_end - setup_html_start);
-    httpd_resp_set_status(req, "301 Moved Permanently");
-    httpd_resp_set_hdr(req, "Location", "http://192.168.4.1/update");
-    httpd_resp_send_chunk(req, (const char *)setup_html_start, setup_html_size);
-
-    //terminate html header
-    httpd_resp_sendstr_chunk(req, NULL);
-    return ESP_OK;
-}
+// static const httpd_uri_t httpServer_getOptionsUri = {
+//     .uri = "/device_demo/device_info/",
+//     .method = HTTP_OPTIONS,
+//     .handler = httpServer_optionsHandler,
+//     .user_ctx = NULL
+// };
 httpd_handle_t start_webserver(void)
 {
     httpd_handle_t server = NULL;
@@ -272,9 +280,9 @@ httpd_handle_t start_webserver(void)
         httpd_register_uri_handler(server, &httpServer_credentialPostUri);
         httpd_register_uri_handler(server, &httpServer_infoGettUri);
         httpd_register_uri_handler(server, &httpServer_putOptionsUri);
-        //httpd_register_uri_handler(server, &httpServer_faviconGetUri);
-        httpd_register_uri_handler(server, &httpServer_setupHtmlGetUri);
-        httpd_register_uri_handler(server, &httpServer_setupPostUri);
+        //httpd_register_uri_handler(server, &httpServer_getOptionsUri);
+        httpd_register_uri_handler(server, &httpServer_otaUpdatePostUri);
+        httpd_register_uri_handler(server, &httpServer_otaUpdateGetUri);
         httpd_register_err_handler(server, HTTPD_404_NOT_FOUND, httpServer_errorHandler);
         return server;
     }

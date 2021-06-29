@@ -58,50 +58,103 @@ void setDays(uint8_t id, char* value){
     for (int i = 0; i < 7;++i){
          memset(device[id].days[i], '\0', sizeof(device[id].days[i]));
     }
-    while (value)
-    {
-        ptr = strnchr(value, ',', sizeof(value));
-        if (ptr != NULL)
+    if(value[0]=='\0'){
+        strcpy(device[id].days[0], "Tm"); //for timer functionalties  
+    }
+    else{
+        while (value)
         {
-            strncpy(device[id].days[pos], value, sizeof(device[id].days[pos]) - 1);
-            ++pos;
-            value += (sizeof(ptr) - 1);
-        }
-        else{
-            strcpy(device[id].days[pos], value);
-            break;
+            ptr = strnchr(value, ',', sizeof(value));
+            if (ptr != NULL)
+            {
+                strncpy(device[id].days[pos], value, sizeof(device[id].days[pos]) - 1);
+                ++pos;
+                value += (sizeof(ptr) - 1);
+            }
+            else{
+                strcpy(device[id].days[pos], value);
+                break;
+            }
         }
     }
     
 }
 void processScheduleMqttData(char *dataStr, uint16_t dataLen){
     //cJSON* request_json = cJSON_Parse(dataStr);
+    if(strnstr(dataStr,"creationDate",dataLen)==NULL){
+        printf("\r\nSchedule/Timer cannot be created\r\n");
+        return;
+    }
+    
     cJSON* item = cJSON_Parse(dataStr);//cJSON_GetObjectItem(request_json,"schedules");
-    uint8_t id=0;
+    uint64_t scheduleId=0;
+    uint8_t index=0;
     char* value;
     //printf("json id type %d\r\n",cJSON_GetObjectItem(item, "id")->type);
     //id=7;
-    id = (cJSON_GetObjectItem(item, "id")->valueint);
+    scheduleId = (uint64_t)(cJSON_GetObjectItem(item, "id")->valuedouble);
+    int temp=-1;
+    for(int i=0;i<MAX_NUM_ID;i++){
+        if(temp<0 && scheduleIdIndex[i]==0)
+            temp=i;
+        if(scheduleIdIndex[i]==scheduleId){
+            temp=i;
+            break;
+        }
+    }
+    if(temp<0){
+        printf("\r\nCannot add new schedule\r\n");
+        cJSON_Delete(item);
+        return;
+    }
+    index=(uint8_t)temp;
+    scheduleIdIndex[index]=scheduleId;
     value = cJSON_GetObjectItem(item, "action")->valuestring;
-    memset(device[id].action,'\0',sizeof(device[id].action));
-    strcpy(device[id].action, value);
+    memset(device[index].action,'\0',sizeof(device[index].action));
+    strcpy(device[index].action, value);
+    if(strcmp(device[index].action,"delete")==0 || strcmp(device[index].action,"remove")==0){
+        printf("\r\nSchedule ID %"PRIu64" deleted\r\n",scheduleId);
+        scheduleIdIndex[index]=0;
+        cJSON_Delete(item);
+        return;    
+    }
     value = cJSON_GetObjectItem(item, "channelKey")->valuestring;
-    memset(device[id].channelKey,'\0',sizeof(device[id].channelKey));
-    strcpy(device[id].channelKey, value);
+    memset(device[index].channelKey,'\0',sizeof(device[index].channelKey));
+    strcpy(device[index].channelKey, value);
     value = cJSON_GetObjectItem(item, "startTime")->valuestring;
-    setTime(id,value,'s');
+    setTime(index,value,'s');
     value = cJSON_GetObjectItem(item, "endtime")->valuestring;
-    setTime(id,value,'e');
-    value = cJSON_GetObjectItem(item, "days")->valuestring;
-    setDays(id,value);
-    printf("\n\nID: %d\n",id);
-    printf("Action: %s\n",device[id].action);
-    printf("Channel Key: %s\n",device[id].channelKey);
-    printf("Start: %d:%d:%d\n",device[id].startTime.hr,device[id].startTime.min,device[id].startTime.sec);
-    printf("End: %d:%d:%d\n",device[id].endTime.hr,device[id].endTime.min,device[id].endTime.sec);
+    setTime(index,value,'e');
+    value = cJSON_GetObjectItem(item, "days")->valuestring;  
+    if(value[0]=='\0'){ //for timer
+        char* value1; 
+        time_t now;
+        struct tm timeinfo; 
+        char date[50];
+        memset(date,'\0',50);
+        time(&now);
+        localtime_r(&now, &timeinfo);   
+        sprintf(date,"%02d-%02d-%04d",timeinfo.tm_mday,timeinfo.tm_mon+1,timeinfo.tm_year+1900);
+        printf("\r\nLocal date %s\r\n",date);      
+        value1 = cJSON_GetObjectItem(item, "creationDate")->valuestring;   
+        printf("\r\nCreation Dtate %s\r\n",value1);
+        if(strcmp(date,value1)!=0){
+            printf("\r\nTimer/Schedule Expired\r\n");
+            scheduleIdIndex[index]=0;
+            cJSON_Delete(item);
+            return;    
+        }
+    }      
+    setDays(index,value);
+    device[index].channelState=0;
+    printf("\r\n\nID: %"PRIu64" , Index %d \n",scheduleIdIndex[index],index);
+    printf("Action: %s\n",device[index].action);
+    printf("Channel Key: %s\n",device[index].channelKey);
+    printf("Start: %d:%d:%d\n",device[index].startTime.hr,device[index].startTime.min,device[index].startTime.sec);
+    printf("End: %d:%d:%d\n",device[index].endTime.hr,device[index].endTime.min,device[index].endTime.sec);
     for (int i = 0; i < 7; ++i)
-        if(device[id].days[i][0] != '\0')
-            printf("Day: %s\n",device[id].days[i]);
+        if(device[index].days[i][0] != '\0')
+            printf("Day: %s\n",device[index].days[i]);
             
     cJSON_Delete(item);
 }

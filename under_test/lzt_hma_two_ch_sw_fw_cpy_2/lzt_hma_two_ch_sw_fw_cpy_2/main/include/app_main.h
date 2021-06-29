@@ -28,7 +28,7 @@
 
 #define APP_CONFIG_NODE_DATA_MAX_LEN 200 //maximum size of node data in bytes
 
-#define MAX_NUM_ID 10
+#define MAX_NUM_ID 50
 
 typedef struct{
     char nodeId[APP_CONFIG_NODE_ID_LEN+1]; //mac ID of the target Node
@@ -73,8 +73,9 @@ typedef struct {
     timeDiv_t startTime;  //Schedule Start Time
     timeDiv_t endTime;    //Schedule End Time
     char days[7][3];      //Days of Week (sun-mon-tue-wed-thu-fri-sat)
+    uint8_t channelState;
 } scheduleDetails_t;
-
+uint64_t scheduleIdIndex[MAX_NUM_ID]; 
 scheduleDetails_t device[MAX_NUM_ID];
 /*
 *@brief Queus the commands, of type app_nodeData_t,
